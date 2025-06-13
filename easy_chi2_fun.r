@@ -180,7 +180,7 @@ GetAlternateAlleles <- function(refNuc, observed) {
   } else if(refNuc == "D"){
     altNucleotides <- c(TRUE, TRUE, TRUE, TRUE, TRUE, FALSE)
   } else {
-    stop("Freq. Estimation: Uknown character used as Ref. nucleotide")
+    stop("Freq. Estimation: Unknown character used as Ref. nucleotide")
   }
   #mark the non-existing nuc/allele as not being alternate
   for (i in 1:6) {
@@ -260,7 +260,7 @@ GetAllelesLabel <- function(nucPosition, refNucleotide, As, Cs, Gs, Ts, Is, Ds) 
     refNucChar <- "D"
     altNucleotides <- c(TRUE, TRUE, TRUE, TRUE, TRUE, FALSE)
   } else {
-    stop("Freq. Estimation: Uknown character used as Ref. nucleotide")
+    stop("Freq. Estimation: Unknown character used as Ref. nucleotide")
   }
   
   for (i in 1:6) {
