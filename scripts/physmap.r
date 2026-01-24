@@ -1,71 +1,76 @@
-#set up env ----
+# set up env ----
 rm(list = ls())
 
 library(Rcpp)
 library(data.table)
 sourceCpp("physmap.cpp")
 
-#set i/o ----
-inputFileName <- "data/input/5feb_tem_a1_c2_rc.rds"
-outFileName   <- "data/output/5feb_tem_a1_c2.rds"
+# set i/o ----
+input_file_name <- "data/input/5feb_tem_a1_c2_rc.rds"
+out_file_name <- "data/output/5feb_tem_a1_c2.rds"
 
-#program starts here ----
-rawData <- readRDS(file = inputFileName)
+# program starts here ----
+raw_data <- readRDS(file = input_file_name)
 
-monoSites <- rawData[ rawData$snp1 ==  "", ]
-monoSites <- as.matrix( monoSites)
+mono_sites <- raw_data[raw_data$snp1 == "", ]
+mono_sites <- as.matrix(mono_sites)
 
-polySites <- rawData[ rawData$snp1 != "", ]
-polySites <- as.matrix( polySites)
+poly_sites <- raw_data[raw_data$snp1 != "", ]
+poly_sites <- as.matrix(poly_sites)
 
 start <- Sys.time()
 
-myMonoLines <- MapMonoSites(monoSites)
+my_mono_lines <- MapMonoSites(mono_sites)
 
-myPolyLines <- MapPolySites(polySites)
-rm(rawData)
+my_poly_lines <- MapPolySites(poly_sites)
+rm(raw_data)
 
-#convert to dt object and change NAs to zeros
-dtMonoSites <- data.table(chrom = as.numeric(myMonoLines[ , 1]),
-                          pos   = as.numeric(myMonoLines[ , 2]),
-                          ref   = as.character(myMonoLines[ , 3]),
-                          a     = as.numeric(myMonoLines[ , 4]),
-                          c     = as.numeric(myMonoLines[ , 5]),
-                          g     = as.numeric(myMonoLines[ , 6]),
-                          t     = as.numeric(myMonoLines[ , 7]),
-                          i     = as.numeric(myMonoLines[ , 8]),
-                          d     = as.numeric(myMonoLines[ , 9]),
-                          key = c("chrom","pos")
-                                         )
-dtMonoSites[is.na(dtMonoSites)] <- 0
-rm(monoSites, myMonoLines)
-
-dtPolySites <- data.table(chrom = as.numeric(myPolyLines[,1]),
-                          pos   = as.numeric(myPolyLines[,2]),
-                          ref   = as.character(myPolyLines[,3]),
-                          a     = as.numeric(myPolyLines[,4]),
-                          c     = as.numeric(myPolyLines[,5]),
-                          g     = as.numeric(myPolyLines[,6]),
-                          t     = as.numeric(myPolyLines[,7]),
-                          i     = as.numeric(myPolyLines[,8]),
-                          d     = as.numeric(myPolyLines[,9]),
-                          key = c("chrom","pos")
+# convert to dt object and change NAs to zeros
+dt_mono_sites <- data.table(
+  chrom = as.numeric(my_mono_lines[, 1]),
+  pos = as.numeric(my_mono_lines[, 2]),
+  ref = as.character(my_mono_lines[, 3]),
+  a = as.numeric(my_mono_lines[, 4]),
+  c = as.numeric(my_mono_lines[, 5]),
+  g = as.numeric(my_mono_lines[, 6]),
+  t = as.numeric(my_mono_lines[, 7]),
+  i = as.numeric(my_mono_lines[, 8]),
+  d = as.numeric(my_mono_lines[, 9]),
+  key = c("chrom", "pos")
 )
-dtPolySites[is.na(dtPolySites)] <- 0
-rm(polySites, myPolyLines)
+
+dt_mono_sites[is.na(dt_mono_sites)] <- 0
+rm(mono_sites, my_mono_lines)
+
+dt_poly_sites <- data.table(
+  chrom = as.numeric(my_poly_lines[, 1]),
+  pos = as.numeric(my_poly_lines[, 2]),
+  ref = as.character(my_poly_lines[, 3]),
+  a = as.numeric(my_poly_lines[, 4]),
+  c = as.numeric(my_poly_lines[, 5]),
+  g = as.numeric(my_poly_lines[, 6]),
+  t = as.numeric(my_poly_lines[, 7]),
+  i = as.numeric(my_poly_lines[, 8]),
+  d = as.numeric(my_poly_lines[, 9]),
+  key = c("chrom", "pos")
+)
+dt_poly_sites[is.na(dt_poly_sites)] <- 0
+rm(poly_sites, my_poly_lines)
 
 end <- Sys.time()
 elapse <- end - start
 elapse
 
-dtChrom <- rbind(dtPolySites, dtMonoSites)
+dt_chrom <- rbind(dt_poly_sites, dt_mono_sites)
 
-#sum the number of reads per nucleotide and create a new field
-dtChrom <- dtChrom[ , sumDepth := sum(a,c,g,t,i,d) , by = 1:NROW(dtChrom) ]
+# sum the number of reads per nucleotide and create a new field
+dt_chrom <- dt_chrom[, sumDepth := sum(a, c, g, t, i, d),
+  by = seq_len(NROW(dt_chrom))
+]
 
 # remove positions with less than 25 reads or more than 1000
 
-dtChrom <- dtChrom[ sumDepth >= 25 ] 
-dtChrom <- dtChrom[ sumDepth < 1000 ]
+dt_chrom <- dt_chrom[sumDepth >= 25]
+dt_chrom <- dt_chrom[sumDepth < 1000]
 
-saveRDS(dtChrom, outFileName)
+saveRDS(dt_chrom, out_file_name)
