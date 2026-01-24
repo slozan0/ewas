@@ -3,7 +3,7 @@ rm(list = ls())
 library(duckdb)
 library(dbplyr)
 
-con <- dbConnect(duckdb("chrom3_4.duckdb"))   # new DB on disk
+con <- dbConnect(duckdb("chrom3_4.duckdb")) # new DB on disk
 
 # One-shot bulk import ──────────────────────────────────────────────────────
 dbExecute(con, "
@@ -26,20 +26,21 @@ dbExecute(con, "
   );
 ")
 
-#check if contents of bad formatted lines
+# check if contents of bad formatted lines
 dbGetQuery(con, "SELECT * FROM bad_rows LIMIT 5")
 # Quick check
 dbGetQuery(con, "SELECT * FROM chrom_data LIMIT 10")
 
-#Quick duplicate check before primary-key
-#If duplicates exist the primary-key build will fail anyway, so it’s smart to look once.
+# Quick duplicate check before primary-key
+# If duplicates exist the primary-key build will fail anyway,
+# so it’s smart to look once.
 dbGetQuery(con, "
   SELECT identifier, COUNT(*) AS n
   FROM chrom_data
   GROUP BY identifier HAVING n > 1
   LIMIT 10")
- 
-# Check the data types 
+
+# Check the data types
 dbGetQuery(con, "PRAGMA table_info('chrom_data');")
 
 ## change identifier VARCHAR → BIGINT in place ───────────────────────────
@@ -50,7 +51,7 @@ dbExecute(con, "
   USING CAST(identifier AS BIGINT);    -- single streaming pass
 ")
 
-# dbGetQuery(con, "SELECT *         
+# dbGetQuery(con, "SELECT *
 #                  FROM chrom_data
 #                  WHERE identifier = 409333263 ")
 
@@ -72,4 +73,3 @@ dbExecute(con, "
 ")
 
 dbDisconnect(con, shutdown = TRUE)
-

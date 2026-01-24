@@ -5,16 +5,16 @@ library(duckdb)
 library(dbplyr)
 
 # open / create the DuckDB file ----
-con <- dbConnect(duckdb("chrom3_1.duckdb"))  # on-disk file
+con <- dbConnect(duckdb("chrom3_1.duckdb")) # on-disk file
 
 dbExecute(con, "SET memory_limit='25GB';      -- or e.g. '8GB'")
 
 # Load duckdb sqlite extentions
-dbExecute(con, "LOAD sqlite;")        
+dbExecute(con, "LOAD sqlite;")
 
 # Attach sqlite database
 ## Use normalized path otherwise it will not attach
-sqlite_path <- normalizePath("data/input/annotations/chrom3_1.db")  
+sqlite_path <- normalizePath("data/input/annotations/chrom3_1.db")
 
 dbExecute(
   con,
@@ -40,27 +40,24 @@ dbExecute(con, "
   FROM chrom_data                     -- <-- the SQLite view in 'main'
   GROUP BY identifier
   ORDER BY identifier;                -- keeps the table clustered
-");
-
-
-# If duplicates exist the primary-key build will fail anyway, so it’s smart to look once:
+")
+# If duplicates exist the primary-key build will fail anyway,
+# so it’s smart to look once:
 dbGetQuery(con, "
   SELECT identifier, COUNT(*) AS n
   FROM chrom_data_duck
   GROUP BY identifier HAVING n > 1
   LIMIT 10")
 
-# dbExecute(con, "DELETE FROM chrom_data_duck WHERE identifier IS NULL;")
+# dbExecute\(con, "DELETE FROM chrom_data_duck WHERE identifier IS NULL;"\)
 
 # Add the primary-key constraint (now memory-cheap)
 dbExecute(con, "
   ALTER TABLE chrom_data_duck
   ADD CONSTRAINT chrom_pk PRIMARY KEY(identifier);
-");
-
+")
 # Drop the original view so you don’t confuse the two
-dbExecute(con, "DROP VIEW chrom_data;");
-
+dbExecute(con, "DROP VIEW chrom_data;")
 # Verify counts
 dbGetQuery(con, "
   SELECT COUNT(*) AS n_rows
@@ -75,9 +72,9 @@ dbGetQuery(con, "
 ")
 
 # Remove the old SQLite view if it’s still around
-dbExecute(con, "DROP VIEW IF EXISTS chrom_data;")   # no error if it’s gone
+dbExecute(con, "DROP VIEW IF EXISTS chrom_data;") # no error if it’s gone
 
-# Rename the native table 
+# Rename the native table
 dbExecute(con, "
   ALTER TABLE chrom_data_duck
   RENAME TO chrom_data;
@@ -95,4 +92,4 @@ dbGetQuery(con, "
   FROM chrom_data;
 ")
 
-dbDisconnect(con, shutdown = TRUE) 
+dbDisconnect(con, shutdown = TRUE)

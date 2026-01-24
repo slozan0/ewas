@@ -1,38 +1,37 @@
 library(dplyr)
 
-#180470 pol "+"
-#477822 pol "-"
+# 180470 pol "+"
+# 477822 pol "-"
 
-GetSubstitutions <- function(refCodon, refAmino, refNuc,
-                             varPosition, variants, 
-                             polarity) {
+get_substitutions <- function(ref_codon, ref_amino, ref_nuc,
+                              var_position, variants, polarity) {
   require(dplyr)
-  #get ref aminoacid
-  nAlleles <- nchar(variants)
-  
-  variantsTable <- data.frame(
-    nuc = character(nAlleles),
-    codon = character(nAlleles), 
-    amino = character(nAlleles),
-    reference = integer(nAlleles),
-    replacement = character(nAlleles)
-  )
-  
-  variantsTable$nuc <- unlist(strsplit(variants, ""))
-  
-  #check if there are indels, if there are then do something
+  # get ref aminoacid
+  n_alleles <- nchar(variants)
 
-  if(polarity == "+"){
-    variantsTable <- variantsTable %>%
+  variants_table <- data.frame(
+    nuc = character(n_alleles),
+    codon = character(n_alleles),
+    amino = character(n_alleles),
+    reference = integer(n_alleles),
+    replacement = character(n_alleles)
+  )
+
+  variants_table$nuc <- unlist(strsplit(variants, ""))
+
+  # check if there are indels, if there are then do something
+
+  if (polarity == "+") {
+    variants_table <- variants_table |>
       mutate(nuc = case_when(
         nuc == "I" ~ "X",
         nuc == "D" ~ "X",
-        TRUE ~ nuc  # Keep the value unchanged if it doesn't match any of the conditions
+        # Keep the value unchanged if it doesn't match any of the conditions
+        TRUE ~ nuc
       ))
-    
-  } else if(polarity == "-"){
+  } else if (polarity == "-") {
     # Use mutate to change values in place
-    variantsTable <- variantsTable %>%
+    variants_table <- variants_table |>
       mutate(nuc = case_when(
         nuc == "A" ~ "T",
         nuc == "C" ~ "G",
@@ -40,140 +39,134 @@ GetSubstitutions <- function(refCodon, refAmino, refNuc,
         nuc == "T" ~ "A",
         nuc == "I" ~ "X",
         nuc == "D" ~ "X",
-        TRUE ~ nuc  # Keep the value unchanged if it doesn't match any of the conditions
+        # Keep the value unchanged if it doesn't match any of the conditions
+        TRUE ~ nuc
       ))
-    
   } else {
     print("something is wrong, you should be reading this!")
   }
-  
-  #get variant aminoacids
-  for (i in 1:nAlleles) {
-    variantsTable$codon[i] <- MakeVariantCodon(refCodon, 
-                                               variantsTable$nuc[i], 
-                                               varPosition)
-    
-    if( grepl("X", variantsTable$codon[i]) ){ 
-    variantsTable$amino[i] <- "UNK"
-    } else { 
-      variantsTable$amino[i] <- GetAmino(variantsTable$codon[i])
-    }
-  
-  }
-  
-  # mark reference  
-  variantsTable$reference <- ifelse(variantsTable$codon == refCodon, 1, 0)
-  
-  for (i in 1:nAlleles) {
-    
-    if(variantsTable$amino[i] == refAmino) {
-      variantsTable$replacement[i] <- "syn"
-    }else if(variantsTable$amino[i] == "UNK" ){
-      variantsTable$replacement[i] <- "unk"
+
+  # get variant aminoacids
+  for (i in 1:n_alleles) {
+    variants_table$codon[i] <- make_variant_codon(
+      ref_codon,
+      variants_table$nuc[i],
+      var_position
+    )
+
+    if (grepl("X", variants_table$codon[i])) {
+      variants_table$amino[i] <- "UNK"
     } else {
-      variantsTable$replacement[i] <- "rep"
+      variants_table$amino[i] <- get_amino(variants_table$codon[i])
     }
   }
-  
-  return(variantsTable)
-  
+
+  # mark reference
+  variants_table$reference <- ifelse(variants_table$codon == ref_codon, 1, 0)
+
+  for (i in 1:n_alleles) {
+    if (variants_table$amino[i] == ref_amino) {
+      variants_table$replacement[i] <- "syn"
+    } else if (variants_table$amino[i] == "UNK") {
+      variants_table$replacement[i] <- "unk"
+    } else {
+      variants_table$replacement[i] <- "rep"
+    }
+  }
+
+  variants_table
 }
 
-MakeVariantCodon <- function(refCod, newNuc, positionsToChange) {
+make_variant_codon <- function(ref_cod, new_nuc, positions_to_change) {
   # Check if positionsToChange is a vector
-  if (!is.vector(positionsToChange)) {
+  if (!is.vector(positions_to_change)) {
     stop("positionsToChange must be a vector of integers.")
   }
-  
+
   # Check if positions are within the reference codon length
-  if (any(positionsToChange < 1 | positionsToChange > nchar(refCod))) {
+  if (any(positions_to_change < 1 | positions_to_change > nchar(ref_cod))) {
     stop("positionsToChange must be within the reference codon length.")
   }
-  
+
   # Sort positions in increasing order
-  positionsToChange <- sort(positionsToChange)
-  
+  positions_to_change <- sort(positions_to_change)
+
   # Split the reference codon into substrings
-  codonParts <- strsplit(refCod, split = "")[[1]]
-  
+  codon_parts <- strsplit(ref_cod, split = "")[[1]]
+
   # Replace nucleotides at specified positions
-  for (i in positionsToChange) {
-    codonParts[[i]] <- newNuc
+  for (i in positions_to_change) {
+    codon_parts[[i]] <- new_nuc
   }
-  
+
   # Combine the parts back into a single string
-  newCodon <- paste(codonParts, collapse = "")
-  
+  new_codon <- paste(codon_parts, collapse = "")
+
   # Return the updated codon
-  return(newCodon)
+  new_codon
 }
 
-GetAmino <- function(codon) {
-  codon <- toupper(codon)  # Convert to uppercase for case-insensitive matching
-  lookup_table <- c("AAA" = "K", "AAG" = "K", "AAT" = "N", "AAC" = "N",
-                    "AGA" = "R", "AGG" = "R", "AGT" = "S", "AGC" = "S",
-                    "ACA" = "T", "ACG" = "T", "ACT" = "T", "ACC" = "T",
-                    "ATA" = "I", "ATG" = "M", "ATT" = "I", "ATC" = "I",
-                    "GAA" = "E", "GAG" = "E", "GAT" = "D", "GAC" = "D",
-                    "GGA" = "G", "GGG" = "G", "GGT" = "G", "GGC" = "G",
-                    "GCA" = "A", "GCG" = "A", "GCT" = "A", "GCC" = "A",
-                    "GTA" = "V", "GTG" = "V", "GTT" = "V", "GTC" = "V",
-                    "CAA" = "Q", "CAG" = "Q", "CAT" = "H", "CAC" = "H",
-                    "CGA" = "R", "CGG" = "R", "CGT" = "R", "CGC" = "R",
-                    "CCA" = "P", "CCG" = "P", "CCT" = "P", "CCC" = "P",
-                    "CTA" = "L", "CTG" = "L", "CTT" = "L", "CTC" = "L",
-                    "TAA" = "*", "TAG" = "*", "TAT" = "Y", "TAC" = "Y",
-                    "TGA" = "*", "TGG" = "W", "TGT" = "C", "TGC" = "C",
-                    "TCA" = "S", "TCG" = "S", "TCT" = "S", "TCC" = "S",
-                    "TTA" = "L", "TTG" = "L", "TTT" = "F", "TTC" = "F")
-  
+get_amino <- function(codon) {
+  codon <- toupper(codon) # Convert to uppercase for case-insensitive matching
+  lookup_table <- c(
+    "AAA" = "K", "AAG" = "K", "AAT" = "N", "AAC" = "N",
+    "AGA" = "R", "AGG" = "R", "AGT" = "S", "AGC" = "S",
+    "ACA" = "T", "ACG" = "T", "ACT" = "T", "ACC" = "T",
+    "ATA" = "I", "ATG" = "M", "ATT" = "I", "ATC" = "I",
+    "GAA" = "E", "GAG" = "E", "GAT" = "D", "GAC" = "D",
+    "GGA" = "G", "GGG" = "G", "GGT" = "G", "GGC" = "G",
+    "GCA" = "A", "GCG" = "A", "GCT" = "A", "GCC" = "A",
+    "GTA" = "V", "GTG" = "V", "GTT" = "V", "GTC" = "V",
+    "CAA" = "Q", "CAG" = "Q", "CAT" = "H", "CAC" = "H",
+    "CGA" = "R", "CGG" = "R", "CGT" = "R", "CGC" = "R",
+    "CCA" = "P", "CCG" = "P", "CCT" = "P", "CCC" = "P",
+    "CTA" = "L", "CTG" = "L", "CTT" = "L", "CTC" = "L",
+    "TAA" = "*", "TAG" = "*", "TAT" = "Y", "TAC" = "Y",
+    "TGA" = "*", "TGG" = "W", "TGT" = "C", "TGC" = "C",
+    "TCA" = "S", "TCG" = "S", "TCT" = "S", "TCC" = "S",
+    "TTA" = "L", "TTG" = "L", "TTT" = "F", "TTC" = "F"
+  )
+
   result <- lookup_table[codon]
-  return(result)
+  result
 }
 
-ReportTripleVariant <- function(variantsTable) {
+report_triple_variant <- function(variants_table) {
   require(dplyr)
-  #if any of the variants are replacement
-  # pick that if not, pick the second
-  
-  #count the number of replacements
-  #count the number of unks 
-  #count the number of syn 
-  
-  counts <- table(variantsTable$replacement)
-  # str(counts["rep"])
-  
-  variantsTable$nRep <- NA
-  
-  if("rep" %in% variantsTable$replacement) {
-    #count how many replacements
-    #make the second row the replacement
-    replacement_row_index <- which(variantsTable$replacement == "rep")[1]
-    
-    dfReordered <- variantsTable %>%
+  # if any of the variants are replacement
+  # pick that, if not, pick the second
+
+  # count the number of replacements
+  # count the number of unks
+  # count the number of syn
+
+  counts <- table(variants_table$replacement)
+  # str\(counts["rep"]\)
+
+  variants_table$nRep <- NA
+
+  if ("rep" %in% variants_table$replacement) {
+    # count how many replacements
+    # make the second row the replacement
+    replacement_row_index <- which(variants_table$replacement == "rep")[1]
+
+    df_reordered <- variants_table |>
       # Remove the row to be moved
-      slice(-replacement_row_index) %>%
+      slice(-replacement_row_index) |>
       # Add it as the second row
-      add_row(slice(variantsTable, replacement_row_index), .before = 2)
-    
-    dfReordered$nRep[2] <- counts["rep"]
-    
-    return(dfReordered)
+      add_row(slice(variants_table, replacement_row_index), .before = 2)
+
+    df_reordered$nRep[2] <- counts["rep"]
+
+    df_reordered
   } else {
-    print(variantsTable)
-    return(variantsTable)
+    print(variants_table)
+    variants_table
   }
 
-  
-  #make notation on the replacement type 
-  
+  # make notation on the replacement type
   # + single syn
   # ++ single syn
-  
   #* single replacement
   #** double replacement
-  
-  
 }
-
-
