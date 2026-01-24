@@ -164,6 +164,7 @@ get_alternate_alleles <- function(ref_nuc, observed) {
 
   alt_nucleotides <- matrix(data = FALSE, nrow = 1, ncol = 6)
   colnames(alt_nucleotides) <- c("A", "C", "G", "T", "I", "D")
+
   # mark the reference nuc/allele as not being the alternate
   if (ref_nuc == "A") {
     alt_nucleotides <- c(FALSE, TRUE, TRUE, TRUE, TRUE, TRUE)
@@ -178,7 +179,7 @@ get_alternate_alleles <- function(ref_nuc, observed) {
   } else if (ref_nuc == "D") {
     alt_nucleotides <- c(TRUE, TRUE, TRUE, TRUE, TRUE, FALSE)
   } else {
-    stop("Freq. Estimation: Uknown character used as Ref. nucleotide")
+    stop("Freq. Estimation: Unknown character used as Ref. nucleotide")
   }
   # mark the non-existing nuc/allele as not being alternate
   for (i in 1:6) {
@@ -279,6 +280,7 @@ get_easy_chi_estimates <- function(poly_site) {
   ref_nuc <- poly_site$ref
   nuc_position <- poly_site$pos
   # nAllelesPerRepeat \( group1_repeat_1 (g1_1), g1_2, NA , g2_1, g2_2, NA, NA\)
+  # Number of mosquitoes per replicate (25 per group)
   n_alleles_per_repeat <- c(25, 25, 0, 25, 25, 0, 0)
 
   # observed\(g1_1, g1_2, NA , g2_1, g2_2, NA, NA), (a, c, g, t, i, d)]

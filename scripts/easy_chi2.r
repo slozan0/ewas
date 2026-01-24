@@ -4,7 +4,11 @@ rm(list = ls())
 library(data.table)
 library(doParallel)
 library(foreach)
-source("easy_chi2_fun.r")
+
+if (!file.exists("scripts/functions/easy_chi2_fun.r")) {
+  stop("Cannot find easy_chi2_fun.r")
+}
+source("scripts/functions/easy_chi2_fun.r")
 
 # set number of processor for parallel processing
 number_of_procesors <- 8
@@ -93,7 +97,7 @@ ezchi_results <- ezchi_results[ezchi_results$lod > bh_threshold]
 ezchi_results[, inconsistency := mark_inconsistency(
   chi1 = group1ChiSqr,
   deg_freedom1 = group1DegFreedom,
-  inconsistency_bark1 = "1*",
+  inconsistency_mark1 = "1*",
   chi2 = group2ChiSqr,
   deg_freedom2 = group2DegFreedom,
   inconsistency_mark2 = "2*",
