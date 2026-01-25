@@ -4,13 +4,15 @@ library(data.table)
 
 # set i/o ----
 ## input files
-phen1_1 <- readRDS("data/input/5feb_tem_a1_c1.rds")
-phen1_2 <- readRDS("data/input/5feb_tem_a2_c1.rds")
-phen2_1 <- readRDS("data/input/5feb_tem_d1_c1.rds")
-phen2_2 <- readRDS("data/input/5feb_tem_d2_c1.rds")
-## input file names
-rds_file <- "data/output/5feb_tem_chr1_avd.rds"
-text_file <- "data/output/5feb_tem_chr1_avd.tbl"
+phen1_1 <- readRDS("data/output/5feb_tem_a1_c3_sample.rds")
+phen1_2 <- readRDS("data/output/5feb_tem_a2_c3_sample.rds")
+phen2_1 <- readRDS("data/output/5feb_tem_d1_c3_sample.rds")
+phen2_2 <- readRDS("data/output/5feb_tem_d2_c3_sample.rds")
+
+## output file names
+rds_file <- "data/output/5feb_tem_chr3_avd_sample.rds"
+text_file <- "data/output/5feb_tem_chr3_avd_sample.tbl"
+
 ## input file labels
 phen1_1_name <- "5feb_tem_a1"
 phen1_2_name <- "5feb_tem_a2"
@@ -18,11 +20,13 @@ phen2_1_name <- "5feb_tem_d1"
 phen2_2_name <- "5feb_tem_d2"
 
 # program starts here ----
-p1_1xp1_2 <- merge(x = phen1_1, y = phen1_2, by = "pos", suffixes = c("1", "2"))
-p2_1xp2_2 <- merge(x = phen2_1, y = phen2_2, by = "pos", suffixes = c("3", "4"))
+p1_1xp1_2 <- merge(x = phen1_1, y = phen1_2,
+                   by = "position", suffixes = c("1", "2"))
+p2_1xp2_2 <- merge(x = phen2_1, y = phen2_2,
+                   by = "position", suffixes = c("3", "4"))
 
 # venn2x2X2
-p1_v_p2 <- merge(x = p1_1xp1_2, y = p2_1xp2_2, by = "pos")
+p1_v_p2 <- merge(x = p1_1xp1_2, y = p2_1xp2_2, by = "position")
 
 rm(p1_1xp1_2)
 rm(p2_1xp2_2)

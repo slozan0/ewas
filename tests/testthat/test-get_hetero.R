@@ -1,5 +1,6 @@
 # Tests for get_hetero function
-source("../../scripts/functions/easy_chi2_fun.r")
+require(here)
+source(here("scripts", "functions", "easy_chi2_fun.r"))
 
 test_that("get_hetero returns value between 0 and 1", {
   # Simple test case: all same nucleotide (homozygous)

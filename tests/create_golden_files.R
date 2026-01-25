@@ -4,6 +4,7 @@
 rm(list = ls())
 
 library(testthat)
+library(here)
 
 cat("\n")
 cat("========================================\n")
@@ -12,7 +13,7 @@ cat("========================================\n")
 cat("\n")
 
 # Create fixtures directory if it doesn't exist
-fixtures_dir <- "tests/testthat/fixtures"
+fixtures_dir <- here("tests", "testthat", "fixtures")
 if (!dir.exists(fixtures_dir)) {
   dir.create(fixtures_dir, recursive = TRUE)
   cat("Created fixtures directory\n\n")
@@ -24,7 +25,7 @@ create_physmap_golden <- function() {
   cat("Creating physmap golden file...\n")
 
   # Check if sample data exists
-  sample_file <- "data/sample/5feb_tem_a1_c3_sample.rds"
+  sample_file <- here("data", "sample", "5feb_tem_a1_c3_sample.rds")
   if (!file.exists(sample_file)) {
     cat("✗ Sample data not found:", sample_file, "\n")
     cat("  Run: source('scripts/create_sample_data.r')\n\n")
@@ -32,7 +33,8 @@ create_physmap_golden <- function() {
   }
 
   # Check if C++ code exists
-  if (!file.exists("scripts/physmap.cpp")) {
+  cpp_file <- here("scripts", "functions", "physmap.cpp")
+  if (!file.exists(cpp_file)) {
     cat("✗ physmap.cpp not found\n\n")
     return(FALSE)
   }
@@ -43,7 +45,7 @@ create_physmap_golden <- function() {
 
   # Compile C++ code
   cat("  Compiling C++ code...\n")
-  suppressMessages(sourceCpp("scripts/physmap.cpp"))
+  suppressMessages(sourceCpp(cpp_file))
 
   # Run physmap logic
   cat("  Processing sample data...\n")
@@ -55,8 +57,10 @@ create_physmap_golden <- function() {
   poly_sites <- raw_data[raw_data$snp1 != "", ]
   poly_sites <- as.matrix(poly_sites)
 
+  # nolint start: object_usage_linter (C++ functions)
   my_mono_lines <- MapMonoSites(mono_sites)
   my_poly_lines <- MapPolySites(poly_sites)
+  # nolint end
 
   dt_mono_sites <- data.table(
     chrom = as.numeric(my_mono_lines[, 1]),
@@ -88,15 +92,18 @@ create_physmap_golden <- function() {
 
   dt_chrom <- rbind(dt_poly_sites, dt_mono_sites)
 
+  # nolint start: object_usage_linter
   dt_chrom <- dt_chrom[, sumDepth := sum(a, c, g, t, i, d),
     by = seq_len(NROW(dt_chrom))
   ]
 
   dt_chrom <- dt_chrom[sumDepth >= 25]
   dt_chrom <- dt_chrom[sumDepth < 1000]
+  # nolint end
 
   # Save golden file
-  golden_file <- file.path(fixtures_dir, "physmap_golden_output.rds")
+  golden_file <- here("tests", "testthat", "fixtures",
+                      "physmap_golden_output.rds")
 
   # Check if file already exists
   if (file.exists(golden_file)) {
@@ -138,7 +145,7 @@ create_physmap_golden <- function() {
   ))
   cat("\n")
 
-  return(TRUE)
+  TRUE
 }
 
 # === Main Menu ===
@@ -155,7 +162,11 @@ if (choice == "1") {
   create_physmap_golden()
 } else if (choice == "2") {
   cat("\nExisting golden files:\n")
-  golden_files <- list.files(fixtures_dir, pattern = "\\.rds$", full.names = TRUE)
+  golden_files <- list.files(
+    fixtures_dir,
+    pattern = "\\.rds$",
+    full.names = TRUE
+  )
 
   if (length(golden_files) == 0) {
     cat("  No golden files found\n")

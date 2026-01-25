@@ -130,11 +130,12 @@ test_that("physmap processes sample data correctly", {
   )
 
   # Test 8: Golden file comparison (regression test)
-  golden_file <- "tests/testthat/fixtures/physmap_golden_output.rds"
+  golden_file <- here("tests", "testthat", "fixtures",
+                      "physmap_golden_output.rds")
 
   if (!file.exists(golden_file)) {
     # First run - create golden file
-    dir.create("tests/testthat/fixtures",
+    dir.create(here("tests", "testthat", "fixtures"),
                showWarnings = FALSE, recursive = TRUE)
     saveRDS(dt_chrom, golden_file)
     skip("Created golden output file for future comparison")
@@ -154,12 +155,14 @@ test_that("physmap processes sample data correctly", {
 })
 
 test_that("physmap handles edge cases", {
-  skip_if_not(file.exists("scripts/physmap.cpp"),
+  cpp_file <- here("scripts", "functions", "physmap.cpp")
+
+  skip_if_not(file.exists(cpp_file),
               message = "physmap.cpp not found")
 
   library(Rcpp)
   library(data.table)
-  suppressMessages(sourceCpp("scripts/physmap.cpp"))
+  suppressMessages(sourceCpp(cpp_file))
 
   # Test with minimal data structure
   minimal_data <- data.frame(

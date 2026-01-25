@@ -5,10 +5,13 @@ library(data.table)
 library(doParallel)
 library(foreach)
 
-if (!file.exists("scripts/functions/easy_chi2_fun.r")) {
+function_file <- here("scripts", "functions", "easy_chi2_fun.r")
+poly_sites_file <- "data/output/5feb_tem_chr3_avd_sample.rds"
+
+if (!file.exists(function_file)) {
   stop("Cannot find easy_chi2_fun.r")
 }
-source("scripts/functions/easy_chi2_fun.r")
+source(function_file)
 
 # set number of processor for parallel processing
 number_of_procesors <- 8
@@ -17,24 +20,23 @@ mark_threshold <- 0.05
 
 # set i/o ----
 ## input files
-poly_sites <- readRDS("data/5feb_tem_chr1_avd.rds")
+poly_sites <- readRDS(poly_sites_file)
 
-
-## input file names
+## output file names
 ### text output
-txt_output_file <- "data/output/5feb_tem_ezchi_c1.chi"
+txt_output_file <- "data/output/5feb_tem_ezchi_c3_sample.chi"
 ### r binary output
-raw_ezchi_results <- "data/output/5feb_tem_raw_ezchi_c1.rds"
-rds_ezchi_results <- "data/output/5feb_tem_ezchi_c1.rds"
+raw_ezchi_results_file <- "data/output/5feb_tem_raw_ezchi_c3_sample.rds"
+rds_ezchi_results_file <- "data/output/5feb_tem_ezchi_c3_sample.rds"
 
 # program starts here ----
-poly_sites$ref <- poly_sites$ref1
+poly_sites$refnuc <- poly_sites$refnuc1
 
 # remove extra columns ----
-poly_sites$ref1 <- NULL
-poly_sites$ref2 <- NULL
-poly_sites$ref3 <- NULL
-poly_sites$ref4 <- NULL
+poly_sites$refnuc1 <- NULL
+poly_sites$refnuc2 <- NULL
+poly_sites$refnuc3 <- NULL
+poly_sites$refnuc4 <- NULL
 
 poly_sites$chrom1 <- NULL
 poly_sites$chrom2 <- NULL
@@ -66,7 +68,7 @@ raw_ezchi_results <- foreach(i = 1:n_lines, .combine = "rbind") %dopar% {
 
 stopCluster(cl)
 
-saveRDS(raw_ezchi_results, file = raw_ezchi_results, compress = FALSE)
+saveRDS(raw_ezchi_results, file = raw_ezchi_results_file, compress = FALSE)
 
 # let's make the matrix a data.table and
 # make the nucleotide position a local key

@@ -192,7 +192,7 @@ namespace MosSci
     outline[7] = std::to_string(sumI);
     outline[8] = std::to_string(sumD);
 
-    // chr, pos, a, c, g, t, i, d
+    // chr, position, a, c, g, t, i, d
 
     return (outline);
   }

@@ -1,11 +1,12 @@
 # Regression tests - ensure refactoring doesn't change results
 # This tests the entire pipeline with real data
 
-source("../../scripts/functions/easy_chi2_fun.r")
+source(here("scripts", "functions", "easy_chi2_fun.r"))
+
+sample_file <- here("data", "sample", "5feb_tem_a1_c3_sample.rds")
 
 test_that("get_easy_chi_estimates produces consistent results", {
   # Use sample data (committed to git)
-  sample_file <- "data/sample/test_chr1.rds"
 
   skip_if_not(file.exists(sample_file),
     message = paste(

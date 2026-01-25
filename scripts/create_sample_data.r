@@ -11,8 +11,8 @@ pos_start <- 1000000
 pos_end <- 2000000
 position_col <- "position"  # Column name for nucleotide position
 
-input_dir <- "data/output"  # These are the split chromosome files
-sample_dir <- "data/sample"
+input_dir <- here("data", "output")  # These are the split chromosome files
+sample_dir <- here("data", "sample")
 
 # Create sample directory if it doesn't exist
 if (!dir.exists(sample_dir)) {

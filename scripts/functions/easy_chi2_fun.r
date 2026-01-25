@@ -277,8 +277,8 @@ get_alleles_label <- function(nuc_position, ref_nucleotide,
 }
 
 get_easy_chi_estimates <- function(poly_site) {
-  ref_nuc <- poly_site$ref
-  nuc_position <- poly_site$pos
+  ref_nuc <- poly_site$refnuc
+  nuc_position <- poly_site$position
   # nAllelesPerRepeat \( group1_repeat_1 (g1_1), g1_2, NA , g2_1, g2_2, NA, NA\)
   # Number of mosquitoes per replicate (25 per group)
   n_alleles_per_repeat <- c(25, 25, 0, 25, 25, 0, 0)
@@ -305,12 +305,12 @@ get_easy_chi_estimates <- function(poly_site) {
                               observed[2, ],
                               observed[4, ],
                               observed[5, ]),
-               nGroups = 4)
+               n_groups = 4)
 
   group1_heterozygosity <-
-    get_hetero(counts = rbind(observed[1, ], observed[2, ]), nGroups = 2)
+    get_hetero(counts = rbind(observed[1, ], observed[2, ]), n_groups = 2)
   group2_heterozygosity <-
-    get_hetero(counts = rbind(observed[4, ], observed[5, ]), nGroups = 2)
+    get_hetero(counts = rbind(observed[4, ], observed[5, ]), n_groups = 2)
 
   #++++++++++++++++++++++++++++++++++++++++++++
   # Convert observed values based upon coverage to observed values based
@@ -378,10 +378,10 @@ get_easy_chi_estimates <- function(poly_site) {
   if (group1_heterozygosity != 0) { # if het > 0
     # do chi for
     my_chi_results <- get_chi(
-      nucPosition = nuc_position,
+      nuc_position = nuc_position,
       observed = observed[3, ],
-      wObs1 = w_obs[1, ],
-      wObs2 = w_obs[2, ]
+      w_obs1 = w_obs[1, ],
+      w_obs2 = w_obs[2, ]
     )
 
     group1_chi_sqr <- my_chi_results$chiSqr
@@ -394,10 +394,10 @@ get_easy_chi_estimates <- function(poly_site) {
   if (group2_heterozygosity != 0) { # if het > 0
     # do chi for
     my_chi_results <- get_chi(
-      nucPosition = nuc_position,
+      nuc_position = nuc_position,
       observed = observed[6, ],
-      wObs1 = w_obs[4, ],
-      wObs2 = w_obs[5, ]
+      w_obs1 = w_obs[4, ],
+      w_obs2 = w_obs[5, ]
     )
 
     group2_chi_sqr <- my_chi_results$chiSqr
@@ -418,7 +418,7 @@ get_easy_chi_estimates <- function(poly_site) {
   my_freq <- get_frequencies(
     observed = observed,
     total = sum(c(observed[3, ], sum(observed[6, ]))),
-    altAlleles = alt_alleles
+    alt_alleles = alt_alleles
   )
 
   group1_alt_all_freq <- my_freq$RF1
