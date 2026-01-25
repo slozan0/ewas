@@ -1,4 +1,64 @@
+# R session files
 .Rproj.user
 .Rhistory
 .RData
 .Ruserdata
+.httr-oauth
+
+script/temp/
+
+# renv - ignore the library but keep lock file and activate script
+renv/library/
+renv/local/
+renv/cellar/
+renv/staging/
+renv/python/
+
+# Data - ignore real/large data, keep sample data
+# Real data (large, sensitive, or proprietary)
+data/input/
+data/output/
+data/cache/
+data/raw/
+
+# Keep sample data for testing (explicitly NOT ignored)
+!data/sample/
+
+# Database files (usually large)
+*.db
+*.duckdb
+*.sqlite
+*.sqlite3
+
+# Exception: allow small sample databases
+!data/sample/**/*.db
+!data/sample/**/*.duckdb
+
+# Large data files
+*.readcounts
+*.fastq
+*.fastq.gz
+*.bam
+*.sam
+*.vcf
+*.vcf.gz
+
+# R data files (can be large)
+data/input/*.rds
+data/output/*.rds
+data/cache/*.rds
+
+# Keep sample RDS files
+!data/sample/**/*.rds
+
+# Output files
+*.chi
+*.log
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

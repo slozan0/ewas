@@ -4,12 +4,18 @@
 source("../../scripts/functions/easy_chi2_fun.r")
 
 test_that("get_easy_chi_estimates produces consistent results", {
-  skip_if_not(file.exists("data/5feb_tem_chr1_avd.rds"),
-    message = "Test data not found"
+  # Use sample data (committed to git)
+  sample_file <- "data/sample/test_chr1.rds"
+
+  skip_if_not(file.exists(sample_file),
+    message = paste(
+      "Sample data not found. Run:",
+      "source('scripts/create_sample_data.r')"
+    )
   )
 
-  # Load a small sample of real data
-  poly_sites <- readRDS("data/5feb_tem_chr1_avd.rds")
+  # Load sample data
+  poly_sites <- readRDS(sample_file)
 
   # Take just the first row
   poly_site <- poly_sites[1, ]

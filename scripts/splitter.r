@@ -4,11 +4,11 @@ library(data.table)
 
 # set i/o ----
 ## input
-file_path <- "data/input/5feb_tem_a1.readcounts"
+file_path <- "data/input/5feb_tem_a2.readcounts"
 ## output
-chr1_file <- "data/output/5feb_tem_a1_c1_rc.rds"
-chr2_file <- "data/output/5feb_tem_a1_c2_rc.rds"
-chr3_file <- "data/output/5feb_tem_a1_c3_rc.rds"
+chr1_file <- "data/output/5feb_tem_a2_c1_rc.rds"
+chr2_file <- "data/output/5feb_tem_a2_c2_rc.rds"
+chr3_file <- "data/output/5feb_tem_a2_c3_rc.rds"
 
 # program starts here ----
 ##
@@ -23,14 +23,26 @@ for (i in 1:n_snps) {
 }
 
 start <- Sys.time()
+
 raw_data <- read.table(
   file = file_path,
+  header = TRUE,
   sep = column_separator_character,
   fill = TRUE,
   col.names = c("chrom", "position", "refnuc",
                 "depth", "q30_depth", "refQA", snp_col),
-  stringsAsFactors = FALSE
+  stringsAsFactors = FALSE,
+  colClasses = c(
+    "character",  # chrom
+    "integer",    # position (force integer!)
+    "character",  # refnuc
+    "integer",    # depth
+    "integer",    # q30_depth
+    "character",  # refQA
+    rep("character", length(snp_col))  # snp columns
+  )
 )
+
 
 end <- Sys.time()
 elapse <- end - start

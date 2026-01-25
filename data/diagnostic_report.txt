@@ -1,0 +1,143 @@
+DATA FILE DIAGNOSTIC REPORT
+Generated: 2026-01-25 11:07:13 
+
+
+========================================
+Analyzing: 5feb_tem_a1_c3_rc.rds
+========================================
+Loading data...
+  Rows: 12,527,381
+  Columns: 16
+  Column names: chrom, position, refnuc, depth, q30_depth, refQA, snp1, snp2, snp3, snp4
+    ... and 6 more
+
+--- Position Statistics ---
+  Min position: 43,224
+  Max position: 409,697,568
+  Range: 409,654,344
+  No NA positions
+
+--- Duplicate Check ---
+  No duplicate positions
+
+--- Gap Analysis ---
+  Unique positions: 12,527,381
+  Min gap: 1
+  Max gap: 1,681,201
+  Median gap: 1
+  Large gaps (>10,000): 5948
+  First 5 large gaps:
+    Position 45,069 to 56,416 (gap: 11,347)
+    Position 76,448 to 642,943 (gap: 566,495)
+    Position 643,193 to 933,174 (gap: 289,981)
+    Position 941,619 to 957,762 (gap: 16,143)
+    Position 962,275 to 974,287 (gap: 12,012)
+
+--- Position Distribution (1M bins) ---
+  Too many bins to display (>20)
+  Try: range 43,224 to 409,697,568
+
+========================================
+Analyzing: 5feb_tem_a2_c3_rc.rds
+========================================
+Loading data...
+  Rows: 11,598,290
+  Columns: 16
+  Column names: chrom, position, refnuc, depth, q30_depth, refQA, snp1, snp2, snp3, snp4
+    ... and 6 more
+
+--- Position Statistics ---
+  Min position: 43,296
+  Max position: 409,697,534
+  Range: 409,654,238
+  No NA positions
+
+--- Duplicate Check ---
+  No duplicate positions
+
+--- Gap Analysis ---
+  Unique positions: 11,598,290
+  Min gap: 1
+  Max gap: 1,681,377
+  Median gap: 1
+  Large gaps (>10,000): 5850
+  First 5 large gaps:
+    Position 45,001 to 56,455 (gap: 11,454)
+    Position 76,405 to 933,167 (gap: 856,762)
+    Position 941,608 to 957,890 (gap: 16,282)
+    Position 962,152 to 974,289 (gap: 12,137)
+    Position 984,861 to 1,024,584 (gap: 39,723)
+
+--- Position Distribution (1M bins) ---
+  Too many bins to display (>20)
+  Try: range 43,296 to 409,697,534
+
+========================================
+Analyzing: 5feb_tem_d1_c3_rc.rds
+========================================
+Loading data...
+  Rows: 10,674,126
+  Columns: 16
+  Column names: chrom, position, refnuc, depth, q30_depth, refQA, snp1, snp2, snp3, snp4
+    ... and 6 more
+
+--- Position Statistics ---
+  Min position: 43,462
+  Max position: 409,697,500
+  Range: 409,654,038
+  No NA positions
+
+--- Duplicate Check ---
+  No duplicate positions
+
+--- Gap Analysis ---
+  Unique positions: 10,674,126
+  Min gap: 1
+  Max gap: 1,681,311
+  Median gap: 1
+  Large gaps (>10,000): 5806
+  First 5 large gaps:
+    Position 44,958 to 56,548 (gap: 11,590)
+    Position 76,532 to 933,232 (gap: 856,700)
+    Position 941,543 to 957,705 (gap: 16,162)
+    Position 961,810 to 974,324 (gap: 12,514)
+    Position 984,805 to 1,024,691 (gap: 39,886)
+
+--- Position Distribution (1M bins) ---
+  Too many bins to display (>20)
+  Try: range 43,462 to 409,697,500
+
+========================================
+Analyzing: 5feb_tem_d2_c3_rc.rds
+========================================
+Loading data...
+  Rows: 11,022,216
+  Columns: 17
+  Column names: chrom, position, refnuc, depth, q30_depth, refQA, snp1, snp2, snp3, snp4
+    ... and 7 more
+
+--- Position Statistics ---
+  Min position: 11,813
+  Max position: 409,697,474
+  Range: 409,685,661
+  No NA positions
+
+--- Duplicate Check ---
+  No duplicate positions
+
+--- Gap Analysis ---
+  Unique positions: 11,022,216
+  Min gap: 1
+  Max gap: 1,681,343
+  Median gap: 1
+  Large gaps (>10,000): 5828
+  First 5 large gaps:
+    Position 11,901 to 43,138 (gap: 31,237)
+    Position 44,856 to 56,455 (gap: 11,599)
+    Position 76,524 to 933,201 (gap: 856,677)
+    Position 941,650 to 957,795 (gap: 16,145)
+    Position 962,169 to 974,348 (gap: 12,179)
+
+--- Position Distribution (1M bins) ---
+  Too many bins to display (>20)
+  Try: range 11,813 to 409,697,474

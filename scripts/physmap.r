@@ -3,11 +3,14 @@ rm(list = ls())
 
 library(Rcpp)
 library(data.table)
-sourceCpp("physmap.cpp")
+library(here)
+
+# Install "BH" library if you haven't install.packages("BH")
+sourceCpp(here("scripts", "functions", "physmap.cpp"))
 
 # set i/o ----
-input_file_name <- "data/input/5feb_tem_a1_c2_rc.rds"
-out_file_name <- "data/output/5feb_tem_a1_c2.rds"
+input_file_name <- "data/sample/5feb_tem_d2_c3_sample.rds"
+out_file_name <- "data/output/5feb_tem_d2_c3.rds"
 
 # program starts here ----
 raw_data <- readRDS(file = input_file_name)

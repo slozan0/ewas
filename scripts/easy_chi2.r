@@ -18,6 +18,8 @@ mark_threshold <- 0.05
 # set i/o ----
 ## input files
 poly_sites <- readRDS("data/5feb_tem_chr1_avd.rds")
+
+
 ## input file names
 ### text output
 txt_output_file <- "data/output/5feb_tem_ezchi_c1.chi"
