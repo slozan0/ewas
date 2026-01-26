@@ -156,41 +156,33 @@ get_chi_all <- function(observed, total) {
   results
 }
 
-get_alternate_alleles <- function(ref_nuc, observed) {
-  # nolint start:
-  # refNuc <- refNuc
-  # observed <- ROBS[7,]
-  # nolint end:
+# observed: Normalized number of alleles based on having 25 mosquitoes
+get_alternate_alleles <- function(ref_nuc, observed, debug = FALSE) {
 
-  alt_nucleotides <- matrix(data = FALSE, nrow = 1, ncol = 6)
-  colnames(alt_nucleotides) <- c("A", "C", "G", "T", "I", "D")
+  alleles <- c("A", "C", "G", "T", "I", "D")
 
-  # mark the reference nuc/allele as not being the alternate
-  if (ref_nuc == "A") {
-    alt_nucleotides <- c(FALSE, TRUE, TRUE, TRUE, TRUE, TRUE)
-  } else if (ref_nuc == "C") {
-    alt_nucleotides <- c(TRUE, FALSE, TRUE, TRUE, TRUE, TRUE)
-  } else if (ref_nuc == "G") {
-    alt_nucleotides <- c(TRUE, TRUE, FALSE, TRUE, TRUE, TRUE)
-  } else if (ref_nuc == "T") {
-    alt_nucleotides <- c(TRUE, TRUE, TRUE, FALSE, TRUE, TRUE)
-  } else if (ref_nuc == "I") {
-    alt_nucleotides <- c(TRUE, TRUE, TRUE, TRUE, FALSE, TRUE)
-  } else if (ref_nuc == "D") {
-    alt_nucleotides <- c(TRUE, TRUE, TRUE, TRUE, TRUE, FALSE)
-  } else {
+  # Optional debugging override
+  if (debug) {
+    ref_nuc  <- "A"
+    observed <- c(157.8745, 0, 0, 0, 0, 0)  # A,C,G,T,I,D
+  }
+
+  # Validate inputs
+  if (!ref_nuc %in% alleles) {
     stop("Freq. Estimation: Unknown character used as Ref. nucleotide")
   }
-  # mark the non-existing nuc/allele as not being alternate
-  for (i in 1:6) {
-    if (alt_nucleotides[i] == TRUE && observed[i] > 0.0) {
-      alt_nucleotides[i] <- TRUE
-    } else {
-      alt_nucleotides[i] <- FALSE
-    }
+  if (!is.numeric(observed) || length(observed) != 6) {
+    stop("observed must be a numeric vector of length 6 in order A,C,G,T,I,D")
   }
 
-  alt_nucleotides
+  # Name the vector so the logic is self-documenting
+  names(observed) <- alleles
+
+  # Alternate allele = not ref AND observed > 0
+  is_alt <- (alleles != ref_nuc) & (observed > 0)
+
+  names(is_alt) <- alleles
+  is_alt
 }
 
 mark_inconsistency <- function(chi1, deg_freedom1, inconsistency_mark1,
@@ -203,14 +195,10 @@ mark_inconsistency <- function(chi1, deg_freedom1, inconsistency_mark1,
 
   if (pval1 < mark_threshold) {
     mark <- inconsistency_mark1
-  } else {
-    # do nothing because the difference is not statistically significant
   }
 
   if (pval2 < mark_threshold) {
     mark <- inconsistency_mark2
-  } else {
-    # do nothing because the difference is not statistically significant
   }
 
   mark
@@ -261,13 +249,8 @@ get_alleles_label <- function(nuc_position, ref_nucleotide,
     stop("Freq. Estimation: Unknown character used as Ref. nucleotide")
   }
 
-  for (i in 1:6) {
-    if (alt_nucleotides[i] == TRUE && observed[i] > 0.0) {
-      alt_nucleotides[i] <- TRUE
-    } else {
-      alt_nucleotides[i] <- FALSE
-    }
-  }
+  # The whole loop can be replaced with:
+  alt_nucleotides <- alt_nucleotides & (observed > 0.0)
 
   temp1 <- paste(alleles_character[alt_nucleotides], collapse = "")
 
@@ -309,6 +292,7 @@ get_easy_chi_estimates <- function(poly_site) {
 
   group1_heterozygosity <-
     get_hetero(counts = rbind(observed[1, ], observed[2, ]), n_groups = 2)
+
   group2_heterozygosity <-
     get_hetero(counts = rbind(observed[4, ], observed[5, ]), n_groups = 2)
 
@@ -317,23 +301,12 @@ get_easy_chi_estimates <- function(poly_site) {
   # upon actual numbers of individuals analyzed in each of the four groups
 
   row_sum <- vector(mode = "numeric", length = 7)
-
   w_obs <- matrix(0, nrow = 7, ncol = 6)
 
-  for (ir in 1:7) {
-    for (ic in 1:6) {
-      row_sum[ir] <- observed[ir, ic] + row_sum[ir]
-    }
-  }
-
-  for (ir in 1:7) {
-    for (ic in 1:6) {
-      if (row_sum[ir] == 0) break
-      tbl <- observed[ir, ic] / row_sum[ir]
-      # normalize the number of alleles based on having 25 mosquitoes
-      w_obs[ir, ic] <- tbl * n_alleles_per_repeat[ir] * 2
-    }
-  }
+  row_sum <- rowSums(observed)
+  # Get normalized allele counts based on 25 mosquitoes
+  w_obs <- sweep(observed, 1, row_sum, "/") * n_alleles_per_repeat * 2
+  w_obs[is.na(w_obs)] <- 0  # Handle division by zero
 
   observed[3, 1] <- w_obs[1, 1] + w_obs[2, 1]
   observed[3, 2] <- w_obs[1, 2] + w_obs[2, 2]
@@ -424,24 +397,36 @@ get_easy_chi_estimates <- function(poly_site) {
   group1_alt_all_freq <- my_freq$RF1
   group2_alt_all_freq <- my_freq$RF2
 
-  prob <- 0
   rlod <- 0
+  # Code switches from exact chi-square probabilities to
+  # a straight-line approximation of the log-tail
+  # once the curve becomes linear and numerically unstable.
+  chi_to_lod <- function(chi_sq, df) {
 
-  if (total_chi_sqr < 30) {
-    prob <- pchisq(q = total_chi_sqr, df = total_deg_freedom)
-    rlod <- -log10(1 - prob)
-  } else if (total_chi_sqr >= 30) {
-    if (total_deg_freedom == 1) rlod <-
-      (0.219269476 * total_chi_sqr) + 0.864404467
-    if (total_deg_freedom == 2) rlod <-
-      (0.217147241 * total_chi_sqr) + 7.10543E-15
-    if (total_deg_freedom == 3) rlod <-
-      (0.215026228 * total_chi_sqr) - 0.668488951
-    if (total_deg_freedom == 4) rlod <-
-      (0.212906488 * total_chi_sqr) - 1.232280047
-    if (total_deg_freedom == 5) rlod <-
-      (0.210788076 * total_chi_sqr) - 1.725110612
+    if (chi_sq < 30) {
+      p <- pchisq(chi_sq, df = df)
+      return(-log10(1 - p))
+    }
+
+    coeffs <- list(
+      `1` = c(0.219269476,  0.864404467),
+      `2` = c(0.217147241,  7.10543E-15),
+      `3` = c(0.215026228, -0.668488951),
+      `4` = c(0.212906488, -1.232280047),
+      `5` = c(0.210788076, -1.725110612)
+    )
+
+    if (!as.character(df) %in% names(coeffs)) {
+      stop("Unsupported degrees of freedom")
+    }
+
+    a <- coeffs[[as.character(df)]][1]
+    b <- coeffs[[as.character(df)]][2]
+
+    a * chi_sq + b
   }
+
+  rlod <- chi_to_lod(total_chi_sqr, total_deg_freedom)
 
   estimates <- c(
     nucPosition = nuc_position,

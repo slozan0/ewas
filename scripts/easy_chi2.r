@@ -4,9 +4,10 @@ rm(list = ls())
 library(data.table)
 library(doParallel)
 library(foreach)
+library(here)
 
 function_file <- here("scripts", "functions", "easy_chi2_fun.r")
-poly_sites_file <- "data/output/5feb_tem_chr3_avd_sample.rds"
+poly_sites_file <- "data/sample/5feb_tem_chr3_avd_sample.rds"
 
 if (!file.exists(function_file)) {
   stop("Cannot find easy_chi2_fun.r")
@@ -33,20 +34,12 @@ rds_ezchi_results_file <- "data/output/5feb_tem_ezchi_c3_sample.rds"
 poly_sites$refnuc <- poly_sites$refnuc1
 
 # remove extra columns ----
-poly_sites$refnuc1 <- NULL
-poly_sites$refnuc2 <- NULL
-poly_sites$refnuc3 <- NULL
-poly_sites$refnuc4 <- NULL
-
-poly_sites$chrom1 <- NULL
-poly_sites$chrom2 <- NULL
-poly_sites$chrom3 <- NULL
-poly_sites$chrom4 <- NULL
-
-poly_sites$sumDepth1 <- NULL
-poly_sites$sumDepth2 <- NULL
-poly_sites$sumDepth3 <- NULL
-poly_sites$sumDepth4 <- NULL
+cols_to_remove <- c(
+  "refnuc1", "refnuc2", "refnuc3", "refnuc4",
+  "chrom1", "chrom2", "chrom3", "chrom4",
+  "sumDepth1", "sumDepth2", "sumDepth3", "sumDepth4"
+)
+poly_sites[, (cols_to_remove) := NULL]
 
 # nolint start:
 # rowPosition <- which(polySites == 20423119, arr.ind=TRUE)[,"row"]
@@ -56,7 +49,7 @@ poly_sites$sumDepth4 <- NULL
 # nolint end:
 
 # parallel ----
-# parameters ----
+## parameters
 n_lines <- nrow(poly_sites)
 
 cl <- parallel::makeCluster(number_of_procesors)
@@ -124,7 +117,7 @@ ezchi_results[, alleles := get_alleles_label(
 by = nucPosition
 ]
 
-saveRDS(ezchi_results, file = rds_ezchi_results, compress = FALSE)
+saveRDS(ezchi_results, file = rds_ezchi_results_file, compress = FALSE)
 
 n_remaining_sites <- nrow(ezchi_results)
 
@@ -135,8 +128,13 @@ ezchi_results$alleles <- gsub(" ", "_", ezchi_results$alleles)
 fileconn <- file(txt_output_file, open = "wt")
 
 # Header
-header <-
-  "SNPID,MUTATION,FREQ(ALIVE),FREQ(DEAD),LOD,HET(ALL),HET(ALIVE),HET(DEAD),FREQ(A),FREQ(C),FREQ(G),FREQ(T),FREQ(I),FREQ(D),CHISQ(ALL),CHISQ(ALIVE),CHISQ(DEAD),DF(ALL),DF(ALIVE),DF(DEAD)" # nolint: line_length_linter.
+header <- paste0(
+  "SNPID,MUTATION,FREQ(ALIVE),FREQ(DEAD),LOD,",
+  "HET(ALL),HET(ALIVE),HET(DEAD),FREQ(A),FREQ(C),",
+  "FREQ(G),FREQ(T),FREQ(I),FREQ(D),CHISQ(ALL),",
+  "CHISQ(ALIVE),CHISQ(DEAD),DF(ALL),DF(ALIVE),DF(DEAD)"
+)
+
 writeLines(header, fileconn)
 
 print_format_temp <- data.frame(
@@ -167,34 +165,34 @@ print_format_temp <- data.frame(
 # Prepare format string
 print_format <- paste(print_format_temp[, ], collapse = ",")
 
-# Write each row to the file
-for (i in 1:n_remaining_sites) {
-  line <- sprintf(
-    print_format,
-    ezchi_results$nucPosition[i], # 1
-    ezchi_results$alleles[i], # 2
-    ezchi_results$group1AltAllFreq[i], # 3
-    ezchi_results$group2AltAllFreq[i], # 4
-    ezchi_results$lod[i], # 5
-    ezchi_results$totalHeteroz[i], # 6
-    ezchi_results$group1Heteroz[i], # 7
-    ezchi_results$group2Heteroz[i], # 8
-    ezchi_results$As[i], # 9
-    ezchi_results$Cs[i], # 10
-    ezchi_results$Gs[i], # 11
-    ezchi_results$Ts[i], # 12
-    ezchi_results$Is[i], # 13
-    ezchi_results$Ds[i], # 14
-    ezchi_results$group1ChiSqr[i], # 15
-    ezchi_results$group2ChiSqr[i], # 16
-    ezchi_results$totalChiSqr[i], # 17
-    ezchi_results$group1DegFree[i], # 18
-    ezchi_results$group2DegFree[i], # 19
-    ezchi_results$totalDegFree[i], # 20
-    ezchi_results$inconsistency[i] # 21
-  )
-  writeLines(line, fileconn)
-}
+# Create all lines at once (vectorized - much faster!)
+all_lines <- sprintf(
+  print_format,
+  ezchi_results$nucPosition,
+  ezchi_results$alleles,
+  ezchi_results$group1AltAllFreq,
+  ezchi_results$group2AltAllFreq,
+  ezchi_results$lod,
+  ezchi_results$totalHeteroz,
+  ezchi_results$group1Heteroz,
+  ezchi_results$group2Heteroz,
+  ezchi_results$As,
+  ezchi_results$Cs,
+  ezchi_results$Gs,
+  ezchi_results$Ts,
+  ezchi_results$Is,
+  ezchi_results$Ds,
+  ezchi_results$group1ChiSqr,
+  ezchi_results$group2ChiSqr,
+  ezchi_results$totalChiSqr,
+  ezchi_results$group1DegFree,
+  ezchi_results$group2DegFree,
+  ezchi_results$totalDegFree,
+  ezchi_results$inconsistency
+)
+
+# Write all lines at once
+writeLines(all_lines, fileconn)
 
 # Close the file connection
 close(fileconn)

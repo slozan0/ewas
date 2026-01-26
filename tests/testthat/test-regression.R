@@ -3,7 +3,7 @@
 
 source(here("scripts", "functions", "easy_chi2_fun.r"))
 
-sample_file <- here("data", "sample", "5feb_tem_a1_c3_sample.rds")
+sample_file <- here("data", "sample", "5feb_tem_chr3_avd_sample.rds")
 
 test_that("get_easy_chi_estimates produces consistent results", {
   # Use sample data (committed to git)
@@ -20,7 +20,7 @@ test_that("get_easy_chi_estimates produces consistent results", {
 
   # Take just the first row
   poly_site <- poly_sites[1, ]
-  poly_site$ref <- poly_site$ref1
+  poly_site$refnuc <- poly_site$refnuc1
 
   # Run the function
   result <- get_easy_chi_estimates(poly_site)
@@ -43,8 +43,13 @@ test_that("get_easy_chi_estimates produces consistent results", {
   expect_lte(result["group2Heteroz"], 1)
 
   # Save the result for future comparison (first time only)
-  golden_file <- "tests/testthat/golden-output.rds"
+  golden_file <- here("tests", "testthat", "fixtures",
+                      "ezchi_golden_output.rds")
+
   if (!file.exists(golden_file)) {
+    dir.create(here("tests", "testthat", "fixtures"),
+      showWarnings = FALSE, recursive = TRUE
+    )
     saveRDS(result, golden_file)
     skip("Creating golden output file for future comparison")
   }
