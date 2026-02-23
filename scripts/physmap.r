@@ -1,11 +1,11 @@
 # set up env ----
-rm(list = ls())
+
 
 library(Rcpp)
 library(data.table)
 library(here)
 
-# Install "BH" library if you haven't install.packages("BH")
+# Install "BH" library if you haven't; install.packages("BH")
 sourceCpp(here("scripts", "functions", "physmap.cpp"))
 
 # set i/o ----
@@ -15,17 +15,17 @@ out_file_name <- "data/output/5feb_tem_d2_c3_sample.rds"
 # program starts here ----
 raw_data <- readRDS(file = input_file_name)
 
-mono_sites <- raw_data[raw_data$snp1 == "", ]
+mono_sites <- raw_data[is.na(raw_data$snp1) | raw_data$snp1 == "", ]
 mono_sites <- as.matrix(mono_sites)
 
-poly_sites <- raw_data[raw_data$snp1 != "", ]
+poly_sites <- raw_data[!is.na(raw_data$snp1) & raw_data$snp1 != "", ]
 poly_sites <- as.matrix(poly_sites)
 
 start <- Sys.time()
 
 my_mono_lines <- MapMonoSites(mono_sites)
-
 my_poly_lines <- MapPolySites(poly_sites)
+
 rm(raw_data)
 
 # convert to dt object and change NAs to zeros

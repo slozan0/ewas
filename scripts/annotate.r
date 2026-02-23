@@ -23,7 +23,7 @@ con <- dbConnect(duckdb::duckdb(), dbdir = db_path, read_only = TRUE)
 
 dbWriteTable(con,
   name = "tmp_ids",
-  value = data.frame(nucPosition = chi_results$nucPosition),
+  value = data.frame(nuc_position = chi_results$nuc_position),
   temporary = TRUE,
   overwrite = TRUE
 )
@@ -33,11 +33,11 @@ dbWriteTable(con,
 #    and stream through the 400M rows efficiently
 lookup <- dbGetQuery(con, "
   SELECT
-    t.nucPosition,
+    t.nuc_position,
     c.info
   FROM tmp_ids AS t
   LEFT JOIN chrom_data AS c
-    ON t.nucPosition = c.identifier
+    ON t.nuc_position = c.identifier
 ")
 
 # 3) clean up
@@ -45,8 +45,8 @@ dbDisconnect(con, shutdown = TRUE)
 
 # 4) merge the info back into the original data.table
 setDT(lookup)
-setkey(lookup, nucPosition)
-chi_results[, info := lookup[.SD, info, on = "nucPosition"]]
+setkey(lookup, nuc_position)
+chi_results[, info := lookup[.SD, info, on = "nuc_position"]]
 
 # 5) save
 saveRDS(chi_results, results_path)

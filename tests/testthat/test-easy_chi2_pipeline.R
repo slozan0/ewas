@@ -19,7 +19,8 @@ test_that("easy_chi2 pipeline processes sample data correctly", {
   cat("Loading sample data...\n")
   poly_sites <- readRDS(sample_file)
 
-  # Prepare data (same as easy_chi2.r)
+  # refnuc is set by physmap_ven2x2.r in current data; kept here for
+  # compatibility with sample data that predates physmap_ven2x2.r
   poly_sites$refnuc <- poly_sites$refnuc1
 
   # Remove extra columns
@@ -44,7 +45,7 @@ test_that("easy_chi2 pipeline processes sample data correctly", {
 
   # Combine results
   raw_results <- do.call(rbind, results_list)
-  ezchi_results <- as.data.table(raw_results, key = "nucPosition")
+  ezchi_results <- as.data.table(raw_results, key = "nuc_position")
 
   # === TESTS START HERE ===
 
@@ -52,116 +53,135 @@ test_that("easy_chi2 pipeline processes sample data correctly", {
   expect_s3_class(ezchi_results, "data.table")
 
   expected_cols <- c(
-    "nucPosition", "refNuc", "group1AltAllFreq", "group2AltAllFreq",
-    "lod", "group1Heteroz", "group2Heteroz", "totalHeteroz",
-    "As", "Cs", "Gs", "Ts", "Is", "Ds",
-    "group1ChiSqr", "group2ChiSqr", "totalChiSqr",
-    "group1DegFreedom", "group2DegFreedom", "totalDegFreedom"
+    "nuc_position", "ref_nuc", "group1_alt_all_freq", "group2_alt_all_freq",
+    "lod", "group1_heteroz", "group2_heteroz", "total_heteroz",
+    "a_s", "c_s", "g_s", "t_s", "i_s", "d_s",
+    "group1_chi_sqr", "group2_chi_sqr", "total_chi_sqr",
+    "group1_deg_freedom", "group2_deg_freedom", "total_deg_freedom"
   )
 
-  expect_true(all(expected_cols %in% names(ezchi_results)),
+  expect_true(
+    all(expected_cols %in% names(ezchi_results)),
     info = "All expected columns should be present"
   )
 
   # Test 2: Data types
-  expect_type(ezchi_results$nucPosition, "double")
-  expect_type(ezchi_results$refNuc, "double")
+  expect_type(ezchi_results$nuc_position, "double")
+  expect_type(ezchi_results$ref_nuc, "double")
   expect_type(ezchi_results$lod, "double")
-  expect_type(ezchi_results$group1Heteroz, "double")
+  expect_type(ezchi_results$group1_heteroz, "double")
 
   # Test 3: Value ranges - LOD scores
-  expect_true(all(ezchi_results$lod >= 0),
+  expect_true(
+    all(ezchi_results$lod >= 0),
     info = "All LOD scores should be non-negative"
   )
 
   # Test 4: Value ranges - Heterozygosity (0 to 1)
-  expect_true(all(ezchi_results$group1Heteroz >= 0 &
-    ezchi_results$group1Heteroz <= 1),
-  info = "Group 1 heterozygosity should be between 0 and 1"
+  expect_true(
+    all(ezchi_results$group1_heteroz >= 0 &
+      ezchi_results$group1_heteroz <= 1),
+    info = "Group 1 heterozygosity should be between 0 and 1"
   )
-  expect_true(all(ezchi_results$group2Heteroz >= 0 &
-    ezchi_results$group2Heteroz <= 1),
-  info = "Group 2 heterozygosity should be between 0 and 1"
+  expect_true(
+    all(ezchi_results$group2_heteroz >= 0 &
+      ezchi_results$group2_heteroz <= 1),
+    info = "Group 2 heterozygosity should be between 0 and 1"
   )
-  expect_true(all(ezchi_results$totalHeteroz >= 0 &
-    ezchi_results$totalHeteroz <= 1),
-  info = "Total heterozygosity should be between 0 and 1"
+  expect_true(
+    all(ezchi_results$total_heteroz >= 0 &
+      ezchi_results$total_heteroz <= 1),
+    info = "Total heterozygosity should be between 0 and 1"
   )
 
   # Test 5: Value ranges - Frequencies (0 to 1)
-  expect_true(all(ezchi_results$group1AltAllFreq >= 0 &
-    ezchi_results$group1AltAllFreq <= 1),
-  info = "Group 1 allele frequencies should be between 0 and 1"
+  expect_true(
+    all(ezchi_results$group1_alt_all_freq >= 0 &
+      ezchi_results$group1_alt_all_freq <= 1),
+    info = "Group 1 allele frequencies should be between 0 and 1"
   )
-  expect_true(all(ezchi_results$group2AltAllFreq >= 0 &
-    ezchi_results$group2AltAllFreq <= 1),
-  info = "Group 2 allele frequencies should be between 0 and 1"
+  expect_true(
+    all(ezchi_results$group2_alt_all_freq >= 0 &
+      ezchi_results$group2_alt_all_freq <= 1),
+    info = "Group 2 allele frequencies should be between 0 and 1"
   )
 
   # Test 6: Chi-square values are non-negative
-  expect_true(all(ezchi_results$group1ChiSqr >= 0),
+  expect_true(
+    all(ezchi_results$group1_chi_sqr >= 0),
     info = "Group 1 chi-square should be non-negative"
   )
-  expect_true(all(ezchi_results$group2ChiSqr >= 0),
+  expect_true(
+    all(ezchi_results$group2_chi_sqr >= 0),
     info = "Group 2 chi-square should be non-negative"
   )
-  expect_true(all(ezchi_results$totalChiSqr >= 0),
+  expect_true(
+    all(ezchi_results$total_chi_sqr >= 0),
     info = "Total chi-square should be non-negative"
   )
 
   # Test 7: Degrees of freedom are reasonable
-  expect_true(all(ezchi_results$group1DegFreedom >= 0 &
-    ezchi_results$group1DegFreedom <= 5),
-  info = "Degrees of freedom should be 0-5 (max 6 alleles - 1)"
+  expect_true(
+    all(ezchi_results$group1_deg_freedom >= 0 &
+      ezchi_results$group1_deg_freedom <= 5),
+    info = "Degrees of freedom should be 0-5 (max 6 alleles - 1)"
   )
-  expect_true(all(ezchi_results$group2DegFreedom >= 0 &
-    ezchi_results$group2DegFreedom <= 5),
-  info = "Degrees of freedom should be 0-5"
+  expect_true(
+    all(ezchi_results$group2_deg_freedom >= 0 &
+      ezchi_results$group2_deg_freedom <= 5),
+    info = "Degrees of freedom should be 0-5"
   )
 
   # Test 8: Nucleotide counts are non-negative integers
-  expect_true(all(ezchi_results$As >= 0),
+  expect_true(
+    all(ezchi_results$a_s >= 0),
     info = "A counts should be non-negative"
   )
-  expect_true(all(ezchi_results$Cs >= 0),
+  expect_true(
+    all(ezchi_results$c_s >= 0),
     info = "C counts should be non-negative"
   )
-  expect_true(all(ezchi_results$Gs >= 0),
+  expect_true(
+    all(ezchi_results$g_s >= 0),
     info = "G counts should be non-negative"
   )
-  expect_true(all(ezchi_results$Ts >= 0),
+  expect_true(
+    all(ezchi_results$t_s >= 0),
     info = "T counts should be non-negative"
   )
 
   # Test 9: Total nucleotide count makes sense
-  total_nuc <- ezchi_results$As + ezchi_results$Cs +
-    ezchi_results$Gs + ezchi_results$Ts +
-    ezchi_results$Is + ezchi_results$Ds
+  total_nuc <- ezchi_results$a_s + ezchi_results$c_s +
+    ezchi_results$g_s + ezchi_results$t_s +
+    ezchi_results$i_s + ezchi_results$d_s
 
-  expect_true(all(total_nuc > 0),
+  expect_true(
+    all(total_nuc > 0),
     info = "Each position should have at least some nucleotides"
   )
 
   # Test 10: Reference nucleotide is valid
-  valid_refs <- c(1, 2, 3, 4)  # A=1, C=2, G=3, T=4
-  expect_true(all(ezchi_results$refNuc %in% valid_refs),
+  valid_refs <- c(1, 2, 3, 4) # A=1, C=2, G=3, T=4
+  expect_true(
+    all(ezchi_results$ref_nuc %in% valid_refs),
     info = "Reference nucleotide should be 1-4 (A, C, G, T)"
   )
 
   # Test 11: Positions are in expected range (1M-2M for sample data)
-  expect_true(all(ezchi_results$nucPosition >= 1e6 &
-    ezchi_results$nucPosition <= 2e6),
-  info = "Sample data positions should be in 1M-2M range"
+  expect_true(
+    all(ezchi_results$nuc_position >= 1e6 &
+      ezchi_results$nuc_position <= 2e6),
+    info = "Sample data positions should be in 1M-2M range"
   )
 
   # Test 12: No NAs in critical columns
-  expect_false(any(is.na(ezchi_results$nucPosition)),
-    info = "No NAs in nucPosition"
+  expect_false(any(is.na(ezchi_results$nuc_position)),
+    info = "No NAs in nuc_position"
   )
   expect_false(any(is.na(ezchi_results$lod)),
     info = "No NAs in LOD scores"
   )
-  expect_false(any(is.na(ezchi_results$refNuc)),
+  expect_false(any(is.na(ezchi_results$ref_nuc)),
     info = "No NAs in reference nucleotide"
   )
 })
@@ -175,6 +195,12 @@ test_that("easy_chi2 probability calculations are correct", {
 
   poly_sites <- readRDS(sample_file)
   poly_sites$refnuc <- poly_sites$refnuc1
+  cols_to_remove <- c(
+    "refnuc1", "refnuc2", "refnuc3", "refnuc4",
+    "chrom1", "chrom2", "chrom3", "chrom4",
+    "sumDepth1", "sumDepth2", "sumDepth3", "sumDepth4"
+  )
+  poly_sites[, (cols_to_remove) := NULL]
 
   # Test first row
   result <- get_easy_chi_estimates(poly_site = poly_sites[1, ])
@@ -182,18 +208,18 @@ test_that("easy_chi2 probability calculations are correct", {
 
   # Calculate probability from chi-square and df
   total_prob <- 1 - pchisq(
-    q = result_dt$totalChiSqr,
-    df = result_dt$totalDegFreedom
+    q = result_dt$total_chi_sqr,
+    df = result_dt$total_deg_freedom
   )
 
   group1_prob <- 1 - pchisq(
-    q = result_dt$group1ChiSqr,
-    df = result_dt$group1DegFreedom
+    q = result_dt$group1_chi_sqr,
+    df = result_dt$group1_deg_freedom
   )
 
   group2_prob <- 1 - pchisq(
-    q = result_dt$group2ChiSqr,
-    df = result_dt$group2DegFreedom
+    q = result_dt$group2_chi_sqr,
+    df = result_dt$group2_deg_freedom
   )
 
   # Test probability calculations
@@ -207,10 +233,11 @@ test_that("easy_chi2 probability calculations are correct", {
     info = "Group 2 probability should be between 0 and 1"
   )
 
-  # LOD should be -log10(1 - prob) for chi < 30
-  if (result_dt$totalChiSqr < 30) {
-    expected_lod <- -log10(1 - total_prob)
-    expect_equal(result_dt$lod, expected_lod, tolerance = 1e-6,
+  # LOD should be -log10(p-value) for chi < 30
+  if (result_dt$total_chi_sqr < 30) {
+    expected_lod <- -log10(total_prob)
+    expect_equal(result_dt$lod, expected_lod,
+      tolerance = 1e-6,
       info = "LOD calculation should match expected value"
     )
   }
@@ -238,12 +265,15 @@ test_that("Benjamini-Hochberg correction works correctly", {
     info = "BH threshold should be one of the input p-values"
   )
 
-  # Test with uniform p-values (edge case)
+  # Test with uniform p-values (edge case - no p-values pass BH at alpha=0.01)
+  # seq(0.01, 0.99) values all exceed their j_alpha = i * 0.01/n thresholds,
+  # so the function correctly returns numeric(0) (nothing significant).
   uniform_pvals <- seq(0.01, 0.99, length.out = 100)
   bh_thresh_uniform <- get_benjamini_hochber_thresh(uniform_pvals)
 
-  expect_true(bh_thresh_uniform >= 0 && bh_thresh_uniform <= 1,
-    info = "BH threshold should work with uniform distribution"
+  expect_equal(
+    length(bh_thresh_uniform), 0,
+    info = "BH threshold should be empty when no p-values pass the threshold"
   )
 })
 
@@ -327,6 +357,12 @@ test_that("Golden file comparison - full pipeline", {
   # Process first 5 rows for golden file
   poly_sites <- readRDS(sample_file)
   poly_sites$refnuc <- poly_sites$refnuc1
+  cols_to_remove <- c(
+    "refnuc1", "refnuc2", "refnuc3", "refnuc4",
+    "chrom1", "chrom2", "chrom3", "chrom4",
+    "sumDepth1", "sumDepth2", "sumDepth3", "sumDepth4"
+  )
+  poly_sites[, (cols_to_remove) := NULL]
 
   results_list <- list()
   for (i in 1:5) {
@@ -334,12 +370,12 @@ test_that("Golden file comparison - full pipeline", {
   }
 
   raw_results <- do.call(rbind, results_list)
-  ezchi_results <- as.data.table(raw_results, key = "nucPosition")
+  ezchi_results <- as.data.table(raw_results, key = "nuc_position")
 
   # Add probability calculations
-  ezchi_results[, totalProb := 1 -
-      pchisq(q = totalChiSqr, df = totalDegFreedom),
-    by = nucPosition
+  ezchi_results[, total_prob := 1 -
+    pchisq(q = total_chi_sqr, df = total_deg_freedom),
+  by = nuc_position
   ]
 
   golden_file <- here(

@@ -1,19 +1,19 @@
 rm(list = ls())
 
 library(dplyr)
-source("replacer_functions.r")
+source("replace_functions.r")
 
 chi_results <- readRDS("data/output/annotated_5feb_chrom2.rds")
 
 replace_input <- chi_results |>
   dplyr::select(
-    nucPosition, alleles,
-    group1AltAllFreq,
-    group2AltAllFreq,
+    nuc_position, alleles,
+    group1_alt_all_freq,
+    group2_alt_all_freq,
     lod,
-    totalHeteroz,
-    group1Heteroz,
-    group2Heteroz,
+    total_heteroz,
+    group1_heteroz,
+    group2_heteroz,
     info
   )
 
@@ -41,7 +41,7 @@ replace_input$NREPS <- NA # make space in ram for new data
 
 for (i in seq_len(nrow(replace_input))) {
   if (replace_input$GTYPE[i] == "CDS" && !is.na(replace_input$GTYPE[i])) {
-    nuc_pos <- replace_input$nucPosition[i]
+    nuc_pos <- replace_input$nuc_position[i]
 
     # print\( paste("CDS mutation in nuc pos:", nucPos) \)
 

@@ -56,8 +56,8 @@ get_frequencies <- function(observed, total, alt_alleles) {
   freq_group_two <- sum(freq_group_two_temp[alt_alleles])
 
   results <- list(
-    RF1 = freq_group_one,
-    RF2 = freq_group_two
+    freq_group1 = freq_group_one,
+    freq_group2 = freq_group_two
   )
 
   results
@@ -103,8 +103,8 @@ get_chi <- function(nuc_position, observed, w_obs1, w_obs2) {
   deg_freedom <- n_alleles - 1
 
   results <- list(
-    chiSqr = chi_sqr,
-    degFreedom = deg_freedom
+    chi_sqr = chi_sqr,
+    deg_freedom = deg_freedom
   )
 
   results
@@ -149,8 +149,8 @@ get_chi_all <- function(observed, total) {
   deg_freedom <- n_alleles - 1
 
   results <- list(
-    TCHISQ3 = chi_all,
-    IDF3 = deg_freedom
+    chi_sqr = chi_all,
+    deg_freedom = deg_freedom
   )
 
   results
@@ -357,8 +357,8 @@ get_easy_chi_estimates <- function(poly_site) {
       w_obs2 = w_obs[2, ]
     )
 
-    group1_chi_sqr <- my_chi_results$chiSqr
-    group1_deg_freedom <- my_chi_results$degFreedom
+    group1_chi_sqr <- my_chi_results$chi_sqr
+    group1_deg_freedom <- my_chi_results$deg_freedom
   } else {
     group1_chi_sqr <- 0
     group1_deg_freedom <- 0
@@ -373,8 +373,8 @@ get_easy_chi_estimates <- function(poly_site) {
       w_obs2 = w_obs[5, ]
     )
 
-    group2_chi_sqr <- my_chi_results$chiSqr
-    group2_deg_freedom <- my_chi_results$degFreedom
+    group2_chi_sqr <- my_chi_results$chi_sqr
+    group2_deg_freedom <- my_chi_results$deg_freedom
   } else {
     group2_chi_sqr <- 0
     group2_deg_freedom <- 0
@@ -385,8 +385,8 @@ get_easy_chi_estimates <- function(poly_site) {
     total = sum(c(observed[3, ], observed[6, ]))
   )
 
-  total_chi_sqr <- total_chi_sqr_results$TCHISQ3
-  total_deg_freedom <- total_chi_sqr_results$IDF3
+  total_chi_sqr <- total_chi_sqr_results$chi_sqr
+  total_deg_freedom <- total_chi_sqr_results$deg_freedom
 
   my_freq <- get_frequencies(
     observed = observed,
@@ -394,8 +394,8 @@ get_easy_chi_estimates <- function(poly_site) {
     alt_alleles = alt_alleles
   )
 
-  group1_alt_all_freq <- my_freq$RF1
-  group2_alt_all_freq <- my_freq$RF2
+  group1_alt_all_freq <- my_freq$freq_group1
+  group2_alt_all_freq <- my_freq$freq_group2
 
   rlod <- 0
   # Code switches from exact chi-square probabilities to
@@ -429,27 +429,27 @@ get_easy_chi_estimates <- function(poly_site) {
   rlod <- chi_to_lod(total_chi_sqr, total_deg_freedom)
 
   estimates <- c(
-    nucPosition = nuc_position,
-    refNuc = ref_nuc,
-    # frequency of alternate Allele in group 1
-    group1AltAllFreq = group1_alt_all_freq,
-    group2AltAllFreq = group2_alt_all_freq,
+    nuc_position = nuc_position,
+    ref_nuc = ref_nuc,
+    # frequency of alternate allele in group 1
+    group1_alt_all_freq = group1_alt_all_freq,
+    group2_alt_all_freq = group2_alt_all_freq,
     lod = rlod,
-    group1Heteroz = group1_heterozygosity,
-    group2Heteroz = group2_heterozygosity,
-    totalHeteroz = total_heterozygosity,
-    As = a_s,
-    Cs = c_s,
-    Gs = g_s,
-    Ts = t_s,
-    Is = i_s,
-    Ds = d_s,
-    group1ChiSqr = group1_chi_sqr,
-    group2ChiSqr = group2_chi_sqr,
-    totalChiSqr = total_chi_sqr,
-    group1DegFreedom = group1_deg_freedom,
-    group2DegFreedom = group2_deg_freedom,
-    totalDegFreedom = total_deg_freedom
+    group1_heteroz = group1_heterozygosity,
+    group2_heteroz = group2_heterozygosity,
+    total_heteroz = total_heterozygosity,
+    a_s = a_s,
+    c_s = c_s,
+    g_s = g_s,
+    t_s = t_s,
+    i_s = i_s,
+    d_s = d_s,
+    group1_chi_sqr = group1_chi_sqr,
+    group2_chi_sqr = group2_chi_sqr,
+    total_chi_sqr = total_chi_sqr,
+    group1_deg_freedom = group1_deg_freedom,
+    group2_deg_freedom = group2_deg_freedom,
+    total_deg_freedom = total_deg_freedom
   )
 
   estimates

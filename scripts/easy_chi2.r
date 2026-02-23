@@ -31,7 +31,6 @@ raw_ezchi_results_file <- "data/output/5feb_tem_raw_ezchi_c3_sample.rds"
 rds_ezchi_results_file <- "data/output/5feb_tem_ezchi_c3_sample.rds"
 
 # program starts here ----
-poly_sites$refnuc <- poly_sites$refnuc1
 
 # remove extra columns ----
 cols_to_remove <- c(
@@ -65,56 +64,57 @@ saveRDS(raw_ezchi_results, file = raw_ezchi_results_file, compress = FALSE)
 
 # let's make the matrix a data.table and
 # make the nucleotide position a local key
-ezchi_results <- as.data.table(raw_ezchi_results, key = "nucPosition")
+ezchi_results <- as.data.table(raw_ezchi_results, key = "nuc_position")
 rm(raw_ezchi_results)
 rm(poly_sites)
 
 # let's crate the x2 probs for the contingency tables
-ezchi_results[, totalProb := 1 - pchisq(q = totalChiSqr, df = totalDegFreedom),
-  by = nucPosition
+ezchi_results[,
+  total_prob := 1 - pchisq(q = total_chi_sqr, df = total_deg_freedom),
+  by = nuc_position
 ]
 
-ezchi_results[, group1Prob := 1 -
-    pchisq(q = group1ChiSqr, df = group1DegFreedom),
-  by = nucPosition
+ezchi_results[,
+  group1_prob := 1 - pchisq(q = group1_chi_sqr, df = group1_deg_freedom),
+  by = nuc_position
 ]
 
-ezchi_results[, group2Prob := 1 -
-    pchisq(q = group2ChiSqr, df = group2DegFreedom),
-  by = nucPosition
+ezchi_results[,
+  group2_prob := 1 - pchisq(q = group2_chi_sqr, df = group2_deg_freedom),
+  by = nuc_position
 ]
 
 # estimate Benjamini
-bh_threshold <- -log10(get_benjamini_hochber_thresh(ezchi_results$totalProb))
+bh_threshold <- -log10(get_benjamini_hochber_thresh(ezchi_results$total_prob))
 
 # let's remove the sites with a global probability less than reject threshold
 ezchi_results <- ezchi_results[ezchi_results$lod > bh_threshold]
 
 # mark what is inconsistent within the group
 ezchi_results[, inconsistency := mark_inconsistency(
-  chi1 = group1ChiSqr,
-  deg_freedom1 = group1DegFreedom,
+  chi1 = group1_chi_sqr,
+  deg_freedom1 = group1_deg_freedom,
   inconsistency_mark1 = "1*",
-  chi2 = group2ChiSqr,
-  deg_freedom2 = group2DegFreedom,
+  chi2 = group2_chi_sqr,
+  deg_freedom2 = group2_deg_freedom,
   inconsistency_mark2 = "2*",
   mark_threshold = mark_threshold
 ),
-by = nucPosition
+by = nuc_position
 ]
 
 # let's add the allele list the first character is the reference allele
 ezchi_results[, alleles := get_alleles_label(
-  nuc_position = nucPosition,
-  ref_nucleotide = refNuc,
-  a_s = As,
-  c_s = Cs,
-  g_s = Gs,
-  t_s = Ts,
-  i_s = Is,
-  d_s = Ds
+  nuc_position = nuc_position,
+  ref_nucleotide = ref_nuc,
+  a_s = a_s,
+  c_s = c_s,
+  g_s = g_s,
+  t_s = t_s,
+  i_s = i_s,
+  d_s = d_s
 ),
-by = nucPosition
+by = nuc_position
 ]
 
 saveRDS(ezchi_results, file = rds_ezchi_results_file, compress = FALSE)
@@ -138,26 +138,26 @@ header <- paste0(
 writeLines(header, fileconn)
 
 print_format_temp <- data.frame(
-  nucPosition = "%10.0f",
+  nuc_position = "%10.0f",
   alleles = "%6s",
-  group1AltAllFreq = "%8.5f",
-  group2AltAllFreq = "%8.5f",
+  group1_alt_all_freq = "%8.5f",
+  group2_alt_all_freq = "%8.5f",
   lod = "%7.2f",
-  group1Heteroz = "%8.5f",
-  group2Heteroz = "%8.5f",
-  totalHeteroz = "%8.5f",
-  As = "%8.0f",
-  Cs = "%7.0f",
-  Gs = "%8.0f",
-  Ts = "%8.0f",
-  Is = "%8.0f",
-  Ds = "%8.0f",
-  group1ChiSqr = "%11.5f",
-  group2ChiSqr = "%10.5f",
-  totalChiSqr = "%10.5f",
-  group1DegFree = "%5.0f",
-  group2DegFree = "%5.0f",
-  totalDegFree = "%5.0f",
+  group1_heteroz = "%8.5f",
+  group2_heteroz = "%8.5f",
+  total_heteroz = "%8.5f",
+  a_s = "%8.0f",
+  c_s = "%7.0f",
+  g_s = "%8.0f",
+  t_s = "%8.0f",
+  i_s = "%8.0f",
+  d_s = "%8.0f",
+  group1_chi_sqr = "%11.5f",
+  group2_chi_sqr = "%10.5f",
+  total_chi_sqr = "%10.5f",
+  group1_deg_freedom = "%5.0f",
+  group2_deg_freedom = "%5.0f",
+  total_deg_freedom = "%5.0f",
   inconsistency = "%3s"
 )
 
@@ -168,26 +168,26 @@ print_format <- paste(print_format_temp[, ], collapse = ",")
 # Create all lines at once (vectorized - much faster!)
 all_lines <- sprintf(
   print_format,
-  ezchi_results$nucPosition,
+  ezchi_results$nuc_position,
   ezchi_results$alleles,
-  ezchi_results$group1AltAllFreq,
-  ezchi_results$group2AltAllFreq,
+  ezchi_results$group1_alt_all_freq,
+  ezchi_results$group2_alt_all_freq,
   ezchi_results$lod,
-  ezchi_results$totalHeteroz,
-  ezchi_results$group1Heteroz,
-  ezchi_results$group2Heteroz,
-  ezchi_results$As,
-  ezchi_results$Cs,
-  ezchi_results$Gs,
-  ezchi_results$Ts,
-  ezchi_results$Is,
-  ezchi_results$Ds,
-  ezchi_results$group1ChiSqr,
-  ezchi_results$group2ChiSqr,
-  ezchi_results$totalChiSqr,
-  ezchi_results$group1DegFree,
-  ezchi_results$group2DegFree,
-  ezchi_results$totalDegFree,
+  ezchi_results$total_heteroz,
+  ezchi_results$group1_heteroz,
+  ezchi_results$group2_heteroz,
+  ezchi_results$a_s,
+  ezchi_results$c_s,
+  ezchi_results$g_s,
+  ezchi_results$t_s,
+  ezchi_results$i_s,
+  ezchi_results$d_s,
+  ezchi_results$group1_chi_sqr,
+  ezchi_results$group2_chi_sqr,
+  ezchi_results$total_chi_sqr,
+  ezchi_results$group1_deg_freedom,
+  ezchi_results$group2_deg_freedom,
+  ezchi_results$total_deg_freedom,
   ezchi_results$inconsistency
 )
 
