@@ -1,4 +1,31 @@
-get_hetero <- function(counts, n_groups) {
+# Code switches from exact chi-square probabilities to
+# a straight-line approximation of the log-tail
+# once the curve becomes linear and numerically unstable.
+chi_to_lod <- function(chi_sq, df) {
+  if (chi_sq < 30) {
+    p <- pchisq(chi_sq, df = df)
+    return(-log10(1 - p))
+  }
+
+  coeffs <- list(
+    `1` = c(0.219269476,  0.864404467),
+    `2` = c(0.217147241,  7.10543E-15),
+    `3` = c(0.215026228, -0.668488951),
+    `4` = c(0.212906488, -1.232280047),
+    `5` = c(0.210788076, -1.725110612)
+  )
+
+  if (!as.character(df) %in% names(coeffs)) {
+    stop("Unsupported degrees of freedom")
+  }
+
+  a <- coeffs[[as.character(df)]][1]
+  b <- coeffs[[as.character(df)]][2]
+
+  a * chi_sq + b
+}
+
+get_hetero <- function(counts) {
   a <- sum(counts[, 1])
   c <- sum(counts[, 2])
   g <- sum(counts[, 3])
@@ -26,12 +53,6 @@ get_hetero <- function(counts, n_groups) {
 }
 
 get_frequencies <- function(observed, total, alt_alleles) {
-  # nolint start:
-  # observed <- ROBS
-  # total <- T1 + T2
-  # altAlleles <- altAlleles
-  # nolint end:
-
   n_alleles_g1 <- 0
   n_alleles_g2 <- 0
 
@@ -63,13 +84,7 @@ get_frequencies <- function(observed, total, alt_alleles) {
   results
 }
 
-get_chi <- function(nuc_position, observed, w_obs1, w_obs2) {
-  # nolint start:
-  # rObs <- ROBS[3, ]
-  # wObs1 = WOBS[1, ]
-  # wObs2 = WOBS[2, ]
-  # nolint end:
-
+get_chi <- function(observed, w_obs1, w_obs2) {
   n_alleles <- 0
 
   expected_values_group_one <- vector(mode = "numeric", length = 7)
@@ -111,11 +126,6 @@ get_chi <- function(nuc_position, observed, w_obs1, w_obs2) {
 }
 
 get_chi_all <- function(observed, total) {
-  # nolint start:
-  # observed <- ROBS
-  # total <- T1 + T2
-  # nolint end:
-
   freq_total <- vector(mode = "numeric", length = 7)
   expected_value_group1 <- vector(mode = "numeric", length = 7)
   expected_value_group2 <- vector(mode = "numeric", length = 7)
@@ -188,75 +198,33 @@ get_alternate_alleles <- function(ref_nuc, observed, debug = FALSE) {
 mark_inconsistency <- function(chi1, deg_freedom1, inconsistency_mark1,
                                chi2, deg_freedom2, inconsistency_mark2,
                                mark_threshold) {
-  mark <- ""
-
   pval1 <- 1 - pchisq(q = chi1, df = deg_freedom1)
   pval2 <- 1 - pchisq(q = chi2, df = deg_freedom2)
 
-  if (pval1 < mark_threshold) {
-    mark <- inconsistency_mark1
-  }
+  g1 <- if (pval1 < mark_threshold) "1" else ""
+  g2 <- if (pval2 < mark_threshold) "2" else ""
 
-  if (pval2 < mark_threshold) {
-    mark <- inconsistency_mark2
-  }
+  mark <- if (nchar(g1) + nchar(g2) > 0) paste0(g1, g2, "*") else ""
 
   mark
 }
 
 get_alleles_label <- function(nuc_position, ref_nucleotide,
                               a_s, c_s, g_s, t_s, i_s, d_s) {
-  # nolint start:
-  # i <- 14
-  # refNucleotide <- ezChiResults$As[i]
-  # As = ezChiResults$As[i]
-  # Cs = ezChiResults$Cs[i]
-  # Gs = ezChiResults$Gs[i]
-  # Ts = ezChiResults$Ts[i]
-  # Is = ezChiResults$Is[i]
-  # Ds = ezChiResults$Ds[i]
-  # #observed <-  c(125, 0, 0, 104, 0, 0)
-  # nolint end:
+  alleles <- c("A", "C", "G", "T", "I", "D")
+  ref_nuc_char <- c(
+    "1" = "A", "2" = "C", "3" = "G",
+    "4" = "T", "5" = "I", "6" = "D"
+  )[as.character(ref_nucleotide)]
 
-  observed <- c(a_s, c_s, g_s, t_s, i_s, d_s)
-
-  ref_nuc_char <- " "
-
-  alleles_character <- c("A", "C", "G", "T", "I", "D")
-
-  alt_nucleotides <- matrix(data = FALSE, nrow = 1, ncol = 6)
-  colnames(alt_nucleotides) <- alleles_character
-
-  if (ref_nucleotide == 1) {
-    ref_nuc_char <- "A"
-    alt_nucleotides <- c(FALSE, TRUE, TRUE, TRUE, TRUE, TRUE)
-  } else if (ref_nucleotide == 2) {
-    ref_nuc_char <- "C"
-    alt_nucleotides <- c(TRUE, FALSE, TRUE, TRUE, TRUE, TRUE)
-  } else if (ref_nucleotide == 3) {
-    ref_nuc_char <- "G"
-    alt_nucleotides <- c(TRUE, TRUE, FALSE, TRUE, TRUE, TRUE)
-  } else if (ref_nucleotide == 4) {
-    ref_nuc_char <- "T"
-    alt_nucleotides <- c(TRUE, TRUE, TRUE, FALSE, TRUE, TRUE)
-  } else if (ref_nucleotide == 5) {
-    ref_nuc_char <- "I"
-    alt_nucleotides <- c(TRUE, TRUE, TRUE, TRUE, FALSE, TRUE)
-  } else if (ref_nucleotide == 6) {
-    ref_nuc_char <- "D"
-    alt_nucleotides <- c(TRUE, TRUE, TRUE, TRUE, TRUE, FALSE)
-  } else {
+  if (is.na(ref_nuc_char)) {
     stop("Freq. Estimation: Unknown character used as Ref. nucleotide")
   }
 
-  # The whole loop can be replaced with:
-  alt_nucleotides <- alt_nucleotides & (observed > 0.0)
+  observed <- c(a_s, c_s, g_s, t_s, i_s, d_s)
+  is_alt <- (alleles != ref_nuc_char) & (observed > 0)
 
-  temp1 <- paste(alleles_character[alt_nucleotides], collapse = "")
-
-  alleles_label <- paste(ref_nuc_char, temp1, collapse = "", sep = "")
-
-  alleles_label
+  paste0(ref_nuc_char, paste(alleles[is_alt], collapse = ""))
 }
 
 get_easy_chi_estimates <- function(poly_site) {
@@ -287,63 +255,32 @@ get_easy_chi_estimates <- function(poly_site) {
     get_hetero(counts = rbind(observed[1, ],
                               observed[2, ],
                               observed[4, ],
-                              observed[5, ]),
-               n_groups = 4)
+                              observed[5, ]))
 
   group1_heterozygosity <-
-    get_hetero(counts = rbind(observed[1, ], observed[2, ]), n_groups = 2)
+    get_hetero(counts = rbind(observed[1, ], observed[2, ]))
 
   group2_heterozygosity <-
-    get_hetero(counts = rbind(observed[4, ], observed[5, ]), n_groups = 2)
+    get_hetero(counts = rbind(observed[4, ], observed[5, ]))
 
   #++++++++++++++++++++++++++++++++++++++++++++
   # Convert observed values based upon coverage to observed values based
   # upon actual numbers of individuals analyzed in each of the four groups
-
-  row_sum <- vector(mode = "numeric", length = 7)
-  w_obs <- matrix(0, nrow = 7, ncol = 6)
 
   row_sum <- rowSums(observed)
   # Get normalized allele counts based on 25 mosquitoes
   w_obs <- sweep(observed, 1, row_sum, "/") * n_alleles_per_repeat * 2
   w_obs[is.na(w_obs)] <- 0  # Handle division by zero
 
-  observed[3, 1] <- w_obs[1, 1] + w_obs[2, 1]
-  observed[3, 2] <- w_obs[1, 2] + w_obs[2, 2]
-  observed[3, 3] <- w_obs[1, 3] + w_obs[2, 3]
-  observed[3, 4] <- w_obs[1, 4] + w_obs[2, 4]
-  observed[3, 5] <- w_obs[1, 5] + w_obs[2, 5]
-  observed[3, 6] <- w_obs[1, 6] + w_obs[2, 6]
-
-  observed[6, 1] <- w_obs[4, 1] + w_obs[5, 1]
-  observed[6, 2] <- w_obs[4, 2] + w_obs[5, 2]
-  observed[6, 3] <- w_obs[4, 3] + w_obs[5, 3]
-  observed[6, 4] <- w_obs[4, 4] + w_obs[5, 4]
-  observed[6, 5] <- w_obs[4, 5] + w_obs[5, 5]
-  observed[6, 6] <- w_obs[4, 6] + w_obs[5, 6]
-
-  observed[7, 1] <- observed[3, 1] + observed[6, 1]
-  observed[7, 2] <- observed[3, 2] + observed[6, 2]
-  observed[7, 3] <- observed[3, 3] + observed[6, 3]
-  observed[7, 4] <- observed[3, 4] + observed[6, 4]
-  observed[7, 5] <- observed[3, 5] + observed[6, 5]
-  observed[7, 6] <- observed[3, 6] + observed[6, 6]
+  observed[3, ] <- w_obs[1, ] + w_obs[2, ]
+  observed[6, ] <- w_obs[4, ] + w_obs[5, ]
+  observed[7, ] <- observed[3, ] + observed[6, ]
 
   # find alternate alleles and create label
   alt_alleles <-
     get_alternate_alleles(ref_nuc = ref_nuc, observed = observed[7, ])
 
-  if (ref_nuc == "A") {
-    ref_nuc <- 1
-  } else if (ref_nuc == "C") {
-    ref_nuc <- 2
-  } else if (ref_nuc == "G") {
-    ref_nuc <- 3
-  } else if (ref_nuc == "T") {
-    ref_nuc <- 4
-  } else {
-    # do nothing
-  }
+  ref_nuc <- c(A = 1L, C = 2L, G = 3L, T = 4L)[[ref_nuc]]
 
   #  LABEL equals paste(refNuc, allelesCharacter[altAlleles], sep = "")
   # end of alternate alleles
@@ -351,7 +288,6 @@ get_easy_chi_estimates <- function(poly_site) {
   if (group1_heterozygosity != 0) { # if het > 0
     # do chi for
     my_chi_results <- get_chi(
-      nuc_position = nuc_position,
       observed = observed[3, ],
       w_obs1 = w_obs[1, ],
       w_obs2 = w_obs[2, ]
@@ -367,7 +303,6 @@ get_easy_chi_estimates <- function(poly_site) {
   if (group2_heterozygosity != 0) { # if het > 0
     # do chi for
     my_chi_results <- get_chi(
-      nuc_position = nuc_position,
       observed = observed[6, ],
       w_obs1 = w_obs[4, ],
       w_obs2 = w_obs[5, ]
@@ -396,35 +331,6 @@ get_easy_chi_estimates <- function(poly_site) {
 
   group1_alt_all_freq <- my_freq$freq_group1
   group2_alt_all_freq <- my_freq$freq_group2
-
-  rlod <- 0
-  # Code switches from exact chi-square probabilities to
-  # a straight-line approximation of the log-tail
-  # once the curve becomes linear and numerically unstable.
-  chi_to_lod <- function(chi_sq, df) {
-
-    if (chi_sq < 30) {
-      p <- pchisq(chi_sq, df = df)
-      return(-log10(1 - p))
-    }
-
-    coeffs <- list(
-      `1` = c(0.219269476,  0.864404467),
-      `2` = c(0.217147241,  7.10543E-15),
-      `3` = c(0.215026228, -0.668488951),
-      `4` = c(0.212906488, -1.232280047),
-      `5` = c(0.210788076, -1.725110612)
-    )
-
-    if (!as.character(df) %in% names(coeffs)) {
-      stop("Unsupported degrees of freedom")
-    }
-
-    a <- coeffs[[as.character(df)]][1]
-    b <- coeffs[[as.character(df)]][2]
-
-    a * chi_sq + b
-  }
 
   rlod <- chi_to_lod(total_chi_sqr, total_deg_freedom)
 
@@ -468,8 +374,8 @@ get_benjamini_hochber_thresh <- function(probabilities) {
   differences <- sorted_p_values - j_alpha
 
   negative_differences <- differences[differences < 0]
-  positive_differences <- negative_differences[length(negative_differences)]
-  index <- differences == positive_differences
+  highest_ranked_p_val <- negative_differences[length(negative_differences)]
+  index <- differences == highest_ranked_p_val
 
   ben_hoc_threshold <- sorted_p_values[index]
 

@@ -7,15 +7,15 @@ library(foreach)
 library(here)
 
 function_file <- here("scripts", "functions", "easy_chi2_fun.r")
-poly_sites_file <- "data/sample/5feb_tem_chr3_avd_sample.rds"
+poly_sites_file <- here("data", "output", "5feb_tem_chr3_avd.rds")
 
 if (!file.exists(function_file)) {
   stop("Cannot find easy_chi2_fun.r")
 }
 source(function_file)
 
-# set number of processor for parallel processing
-number_of_procesors <- 8
+# set number of processors for parallel processing
+number_of_processors <- 8
 # set within group marking threshold
 mark_threshold <- 0.05
 
@@ -25,40 +25,29 @@ poly_sites <- readRDS(poly_sites_file)
 
 ## output file names
 ### text output
-txt_output_file <- "data/output/5feb_tem_ezchi_c3_sample.chi"
+txt_output_file <- here("data", "output", "5feb_tem_ezchi_c3.chi")
 ### r binary output
-raw_ezchi_results_file <- "data/output/5feb_tem_raw_ezchi_c3_sample.rds"
-rds_ezchi_results_file <- "data/output/5feb_tem_ezchi_c3_sample.rds"
+raw_ezchi_results_file <-
+  here("data", "output", "5feb_tem_raw_ezchi_c3.rds")
+rds_ezchi_results_file <-
+  here("data", "output", "5feb_tem_ezchi_c3.rds")
 
 # program starts here ----
-
-# remove extra columns ----
-cols_to_remove <- c(
-  "refnuc1", "refnuc2", "refnuc3", "refnuc4",
-  "chrom1", "chrom2", "chrom3", "chrom4",
-  "sumDepth1", "sumDepth2", "sumDepth3", "sumDepth4"
-)
-poly_sites[, (cols_to_remove) := NULL]
-
-# nolint start:
-# rowPosition <- which(polySites == 20423119, arr.ind=TRUE)[,"row"]
-# polySites[6, ]
-# polySite <- (polySites[1, ])
-# print(dbug:on)
-# nolint end:
+start <- Sys.time()
 
 # parallel ----
 ## parameters
 n_lines <- nrow(poly_sites)
 
-cl <- parallel::makeCluster(number_of_procesors)
+cl <- parallel::makeCluster(number_of_processors)
 doParallel::registerDoParallel(cl)
 
-raw_ezchi_results <- foreach(i = 1:n_lines, .combine = "rbind") %dopar% {
-  get_easy_chi_estimates(poly_site = poly_sites[i, ])
-}
-
-stopCluster(cl)
+raw_ezchi_results <- tryCatch(
+  foreach(i = 1:n_lines, .combine = "rbind") %dopar% {
+    get_easy_chi_estimates(poly_site = poly_sites[i, ])
+  },
+  finally = stopCluster(cl)
+)
 
 saveRDS(raw_ezchi_results, file = raw_ezchi_results_file, compress = FALSE)
 
@@ -70,18 +59,7 @@ rm(poly_sites)
 
 # let's crate the x2 probs for the contingency tables
 ezchi_results[,
-  total_prob := 1 - pchisq(q = total_chi_sqr, df = total_deg_freedom),
-  by = nuc_position
-]
-
-ezchi_results[,
-  group1_prob := 1 - pchisq(q = group1_chi_sqr, df = group1_deg_freedom),
-  by = nuc_position
-]
-
-ezchi_results[,
-  group2_prob := 1 - pchisq(q = group2_chi_sqr, df = group2_deg_freedom),
-  by = nuc_position
+  total_prob := 1 - pchisq(q = total_chi_sqr, df = total_deg_freedom)
 ]
 
 # estimate Benjamini
@@ -119,8 +97,6 @@ by = nuc_position
 
 saveRDS(ezchi_results, file = rds_ezchi_results_file, compress = FALSE)
 
-n_remaining_sites <- nrow(ezchi_results)
-
 ezchi_results$alleles <- sprintf("%-6s", ezchi_results$alleles)
 ezchi_results$alleles <- gsub(" ", "_", ezchi_results$alleles)
 
@@ -130,40 +106,36 @@ fileconn <- file(txt_output_file, open = "wt")
 # Header
 header <- paste0(
   "SNPID,MUTATION,FREQ(ALIVE),FREQ(DEAD),LOD,",
-  "HET(ALL),HET(ALIVE),HET(DEAD),FREQ(A),FREQ(C),",
-  "FREQ(G),FREQ(T),FREQ(I),FREQ(D),CHISQ(ALL),",
+  "HET(ALL),HET(ALIVE),HET(DEAD),CNT(A),CNT(C),",
+  "CNT(G),CNT(T),CNT(I),CNT(D),CHISQ(ALL),",
   "CHISQ(ALIVE),CHISQ(DEAD),DF(ALL),DF(ALIVE),DF(DEAD)"
 )
 
 writeLines(header, fileconn)
 
-print_format_temp <- data.frame(
-  nuc_position = "%10.0f",
-  alleles = "%6s",
+print_format <- paste(c(
+  nuc_position        = "%10.0f",
+  alleles             = "%6s",
   group1_alt_all_freq = "%8.5f",
   group2_alt_all_freq = "%8.5f",
-  lod = "%7.2f",
-  group1_heteroz = "%8.5f",
-  group2_heteroz = "%8.5f",
-  total_heteroz = "%8.5f",
-  a_s = "%8.0f",
-  c_s = "%7.0f",
-  g_s = "%8.0f",
-  t_s = "%8.0f",
-  i_s = "%8.0f",
-  d_s = "%8.0f",
-  group1_chi_sqr = "%11.5f",
-  group2_chi_sqr = "%10.5f",
-  total_chi_sqr = "%10.5f",
-  group1_deg_freedom = "%5.0f",
-  group2_deg_freedom = "%5.0f",
-  total_deg_freedom = "%5.0f",
-  inconsistency = "%3s"
-)
-
-
-# Prepare format string
-print_format <- paste(print_format_temp[, ], collapse = ",")
+  lod                 = "%7.2f",
+  group1_heteroz      = "%8.5f",
+  group2_heteroz      = "%8.5f",
+  total_heteroz       = "%8.5f",
+  a_s                 = "%8.0f",
+  c_s                 = "%7.0f",
+  g_s                 = "%8.0f",
+  t_s                 = "%8.0f",
+  i_s                 = "%8.0f",
+  d_s                 = "%8.0f",
+  group1_chi_sqr      = "%11.5f",
+  group2_chi_sqr      = "%10.5f",
+  total_chi_sqr       = "%10.5f",
+  group1_deg_freedom  = "%5.0f",
+  group2_deg_freedom  = "%5.0f",
+  total_deg_freedom   = "%5.0f",
+  inconsistency       = "%3s"
+), collapse = ",")
 
 # Create all lines at once (vectorized - much faster!)
 all_lines <- sprintf(
@@ -196,3 +168,7 @@ writeLines(all_lines, fileconn)
 
 # Close the file connection
 close(fileconn)
+
+end <- Sys.time()
+message("Done. Elapsed: ", round(end - start, 2), " ", units(end - start))
+message("Significant sites: ", nrow(ezchi_results))

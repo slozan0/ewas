@@ -19,18 +19,6 @@ test_that("easy_chi2 pipeline processes sample data correctly", {
   cat("Loading sample data...\n")
   poly_sites <- readRDS(sample_file)
 
-  # refnuc is set by physmap_ven2x2.r in current data; kept here for
-  # compatibility with sample data that predates physmap_ven2x2.r
-  poly_sites$refnuc <- poly_sites$refnuc1
-
-  # Remove extra columns
-  cols_to_remove <- c(
-    "refnuc1", "refnuc2", "refnuc3", "refnuc4",
-    "chrom1", "chrom2", "chrom3", "chrom4",
-    "sumDepth1", "sumDepth2", "sumDepth3", "sumDepth4"
-  )
-  poly_sites[, (cols_to_remove) := NULL]
-
   # Test on first 100 rows (faster, but still comprehensive)
   n_test_rows <- min(100, nrow(poly_sites))
   test_data <- poly_sites[1:n_test_rows, ]
@@ -194,13 +182,6 @@ test_that("easy_chi2 probability calculations are correct", {
   source(here("scripts", "functions", "easy_chi2_fun.r"))
 
   poly_sites <- readRDS(sample_file)
-  poly_sites$refnuc <- poly_sites$refnuc1
-  cols_to_remove <- c(
-    "refnuc1", "refnuc2", "refnuc3", "refnuc4",
-    "chrom1", "chrom2", "chrom3", "chrom4",
-    "sumDepth1", "sumDepth2", "sumDepth3", "sumDepth4"
-  )
-  poly_sites[, (cols_to_remove) := NULL]
 
   # Test first row
   result <- get_easy_chi_estimates(poly_site = poly_sites[1, ])
@@ -356,13 +337,6 @@ test_that("Golden file comparison - full pipeline", {
 
   # Process first 5 rows for golden file
   poly_sites <- readRDS(sample_file)
-  poly_sites$refnuc <- poly_sites$refnuc1
-  cols_to_remove <- c(
-    "refnuc1", "refnuc2", "refnuc3", "refnuc4",
-    "chrom1", "chrom2", "chrom3", "chrom4",
-    "sumDepth1", "sumDepth2", "sumDepth3", "sumDepth4"
-  )
-  poly_sites[, (cols_to_remove) := NULL]
 
   results_list <- list()
   for (i in 1:5) {

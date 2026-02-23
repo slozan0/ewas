@@ -18,14 +18,8 @@ test_that("get_easy_chi_estimates produces consistent results", {
   # Load sample data
   poly_sites <- readRDS(sample_file)
 
-  # Take just the first row and apply the same preprocessing as easy_chi2.r
+  # Take just the first row
   poly_site <- poly_sites[1, ]
-  cols_to_remove <- c(
-    "refnuc1", "refnuc2", "refnuc3", "refnuc4",
-    "chrom1", "chrom2", "chrom3", "chrom4",
-    "sumDepth1", "sumDepth2", "sumDepth3", "sumDepth4"
-  )
-  poly_site <- poly_site[, !(names(poly_site) %in% cols_to_remove), drop = FALSE]
 
   # Run the function
   result <- get_easy_chi_estimates(poly_site)
@@ -33,7 +27,8 @@ test_that("get_easy_chi_estimates produces consistent results", {
   # Check structure
   expect_type(result, "double")
   expect_named(result, c(
-    "nuc_position", "ref_nuc", "group1_alt_all_freq", "group2_alt_all_freq",
+    "nuc_position", "ref_nuc",
+    "group1_alt_all_freq", "group2_alt_all_freq",
     "lod", "group1_heteroz", "group2_heteroz", "total_heteroz",
     "a_s", "c_s", "g_s", "t_s", "i_s", "d_s",
     "group1_chi_sqr", "group2_chi_sqr", "total_chi_sqr",
